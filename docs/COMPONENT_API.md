@@ -24,6 +24,47 @@ export default class MyEditor extends FlowConfigEditorBase {
 
 Inherited public properties: `builderContext`, `inputVariables`, `genericTypeMappings`, `automaticOutputVariables`, `elementInfo`, and the `validate()` method. Do not redeclare them.
 
+### Declarative properties
+
+Set `static flowProperties` and the base renders the described controls, hydrates them, keeps generic type mappings and dependent fields in step, and reports required-value errors. An editor that declares a schema needs **no template and no event handlers**:
+
+```js
+import FlowConfigEditorBase from "c/flowConfigEditorBase";
+
+export default class MyEditor extends FlowConfigEditorBase {
+  static flowProperties = {
+    records: {
+      type: "SObject",
+      collection: true,
+      genericType: "T",
+      objectProperty: "objectApiName",
+      required: true
+    },
+    displayField: { type: "field", dependsOn: "records", required: true },
+    heading: { type: "String" }
+  };
+}
+```
+
+| Key              | Applies to | Meaning                                                               |
+| ---------------- | ---------- | --------------------------------------------------------------------- |
+| `type`           | all        | `String`, `Number`, `SObject`, or `field`. Defaults to `String`.      |
+| `label`          | all        | Visible label. Defaults to a humanized property name.                 |
+| `required`       | all        | Reports `"<label> is required."` when empty.                          |
+| `helpText`       | all        | Help text beside the label.                                           |
+| `placeholder`    | all        | Empty-state text.                                                     |
+| `collection`     | `SObject`  | Restricts the picker to collections.                                  |
+| `genericType`    | `SObject`  | Generic SObject type name kept in step with the selection.            |
+| `objectProperty` | `SObject`  | Optional Flow String property mirroring the resolved object API name. |
+| `allowManual`    | `SObject`  | Allows a manually entered reference. Defaults to `true`.              |
+| `dependsOn`      | `field`    | Property supplying the object API name.                               |
+| `multiple`       | `field`    | Ordered multi-field selection.                                        |
+| `acceptedTypes`  | `field`    | Comma-separated field types.                                          |
+
+The schema is deliberately small. It covers scalars, record collections, and fields chosen from one of those collections. Anything it cannot express — reset notices, legacy property migration, conditional requiredness — drops to the imperative methods below, on the same class. Both layers compose: declare what fits and override `validateConfiguration()` or `configurationChanged()` for the rest.
+
+Declaration order is render order.
+
 ### Reading saved configuration
 
 | Method                                 | Returns                                                        |

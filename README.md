@@ -14,14 +14,14 @@ This project packages that behavior into reusable components so each custom LWC 
 
 ## Included components
 
-| Component                       | Purpose                                                                                                                                |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `c/flowConfigEditorBase`        | Base class supplying the whole Flow Builder editor contract: public inputs, configuration events, generic types, and `validate()`.     |
-| `c-flow-config-resource-picker` | Search and browse Flow resources, globals, element outputs, records, collections, Apex-defined values, labels, and hierarchy settings. |
-| `c-flow-config-value-input`     | One input that accepts either a literal or a compatible Flow resource.                                                                 |
-| `c-flow-config-field-picker`    | Select one or multiple fields, reorder multiple selections, and traverse SObject relationships.                                        |
-| `c-flow-config-picker-header`   | Shared breadcrumb/header UI used by both picker experiences.                                                                           |
-| Utility modules                 | Normalize Flow metadata, create configuration events, resolve schema, position popovers, and coordinate generic SObject types.         |
+| Component                       | Purpose                                                                                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `c/flowConfigEditorBase`        | Base class supplying the whole Flow Builder editor contract: public inputs, configuration events, generic types, and `validate()`. Accepts a declarative property schema. |
+| `c-flow-config-resource-picker` | Search and browse Flow resources, globals, element outputs, records, collections, Apex-defined values, labels, and hierarchy settings.                                    |
+| `c-flow-config-value-input`     | One input that accepts either a literal or a compatible Flow resource.                                                                                                    |
+| `c-flow-config-field-picker`    | Select one or multiple fields, reorder multiple selections, and traverse SObject relationships.                                                                           |
+| `c-flow-config-picker-header`   | Shared breadcrumb/header UI used by both picker experiences.                                                                                                              |
+| Utility modules                 | Normalize Flow metadata, create configuration events, resolve schema, position popovers, and coordinate generic SObject types.                                            |
 
 The core source lives in `force-app`. A complete consuming Flow screen component and custom property editor live separately in `examples` and are not part of a core deployment.
 
@@ -43,40 +43,43 @@ sf project deploy start --source-dir examples --target-org my-org
 
 See [Getting started](docs/GETTING_STARTED.md) for the integration workflow and [Component API](docs/COMPONENT_API.md) for supported attributes and events.
 
-## Minimal custom property editor
+## A complete custom property editor
 
 ```js
 import FlowConfigEditorBase from "c/flowConfigEditorBase";
 
 export default class MyEditor extends FlowConfigEditorBase {
-  get defaultValue() {
-    return this.input("defaultValue");
-  }
+  static flowProperties = {
+    records: {
+      type: "SObject",
+      collection: true,
+      genericType: "T",
+      objectProperty: "objectApiName",
+      required: true
+    },
+    displayField: { type: "field", dependsOn: "records", required: true },
+    heading: { type: "String" }
+  };
+}
+```
 
-  get defaultValueDataType() {
-    return this.inputDataType("defaultValue", "String");
+That is the entire editor — one file, no template, no event handlers. The base class renders the controls, reads and writes Flow Builder's saved configuration, keeps the generic SObject mapping in step with the selected collection, clears the dependent field when the object type changes, and answers `validate()`.
+
+The schema covers the common shapes on purpose. When an editor needs something it cannot express, the same base class exposes the imperative API the schema is built on:
+
+```js
+export default class MyEditor extends FlowConfigEditorBase {
+  static flowProperties = {/* declare what fits */};
+
+  validateConfiguration() {
+    return this.input("heading")?.length > 80
+      ? [{ key: "heading", errorString: "Heading is too long." }]
+      : [];
   }
 }
 ```
 
-```html
-<template>
-  <c-flow-config-value-input
-    label="Default Value"
-    property-name="defaultValue"
-    value="{defaultValue}"
-    value-data-type="{defaultValueDataType}"
-    value-type="String"
-    builder-context="{builderContext}"
-    automatic-output-variables="{automaticOutputVariables}"
-    api-version="{apiVersion}"
-    data-validatable
-    data-property="defaultValue"
-  ></c-flow-config-value-input>
-</template>
-```
-
-That is the whole editor. `builderContext`, `automaticOutputVariables`, `apiVersion`, and `validate()` come from the base class, and the picker dispatches the standard Flow Builder configuration event itself because `property-name` is supplied.
+Both examples in `examples/` show the two ends of this: a one-file declarative editor, and a fuller one that drops to methods for legacy property migration and reset notices.
 
 ## Repository layout
 

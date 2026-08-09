@@ -24,7 +24,9 @@ The consuming editor owns business rules: which inputs are required, which colle
 
 ### Consumer base
 
-`flowConfigEditorBase` owns the half of a custom property editor that is identical in every adopter: the four Flow Builder inputs, configuration-event dispatch, generic type-mapping transitions, and the `validate()` contract. It holds no business rules and renders nothing, so an editor that extends it stays free to declare its own properties, dependencies, and template.
+`flowConfigEditorBase` owns the half of a custom property editor that is identical in every adopter: the four Flow Builder inputs, configuration-event dispatch, generic type-mapping transitions, and the `validate()` contract.
+
+It offers two levels. The imperative methods are the real API and carry no assumptions about how an editor is laid out. On top of them, a `static flowProperties` schema — normalized by `flowConfigEditorSchema` and rendered by `flowConfigEditorForm` — turns the common cases into a declaration with no template at all. The declarative layer is implemented strictly through the imperative one, so an editor can adopt the schema for what fits and drop to methods for what does not, without changing base class or rewriting what already works.
 
 ### Presentation
 
