@@ -20,7 +20,10 @@
     "verify": "npm run check:api-version && npm run lint && npm run test:coverage && npm run format:check",
     "deploy:core": "sf project deploy start --source-dir force-app",
     "deploy:examples": "sf project deploy start --source-dir examples",
-    "assign:permission": "sf org assign permset --name Flow_Config_Editor_Access"
+    "assign:permission": "sf org assign permset --name Flow_Config_Editor_Access",
+    "package:version": "sf package version create --package \"Flow Config Editor Kit\" --installation-key-bypass --code-coverage --wait 90",
+    "package:promote": "sf package version promote --no-prompt",
+    "package:list": "sf package version list --packages \"Flow Config Editor Kit\""
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
