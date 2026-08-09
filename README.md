@@ -16,6 +16,7 @@ This project packages that behavior into reusable components so each custom LWC 
 
 | Component                       | Purpose                                                                                                                                |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `c/flowConfigEditorBase`        | Base class supplying the whole Flow Builder editor contract: public inputs, configuration events, generic types, and `validate()`.     |
 | `c-flow-config-resource-picker` | Search and browse Flow resources, globals, element outputs, records, collections, Apex-defined values, labels, and hierarchy settings. |
 | `c-flow-config-value-input`     | One input that accepts either a literal or a compatible Flow resource.                                                                 |
 | `c-flow-config-field-picker`    | Select one or multiple fields, reorder multiple selections, and traverse SObject relationships.                                        |
@@ -44,6 +45,20 @@ See [Getting started](docs/GETTING_STARTED.md) for the integration workflow and 
 
 ## Minimal custom property editor
 
+```js
+import FlowConfigEditorBase from "c/flowConfigEditorBase";
+
+export default class MyEditor extends FlowConfigEditorBase {
+  get defaultValue() {
+    return this.input("defaultValue");
+  }
+
+  get defaultValueDataType() {
+    return this.inputDataType("defaultValue", "String");
+  }
+}
+```
+
 ```html
 <template>
   <c-flow-config-value-input
@@ -54,12 +69,14 @@ See [Getting started](docs/GETTING_STARTED.md) for the integration workflow and 
     value-type="String"
     builder-context="{builderContext}"
     automatic-output-variables="{automaticOutputVariables}"
-    onvaluechange="{handleValueChange}"
+    api-version="{apiVersion}"
+    data-validatable
+    data-property="defaultValue"
   ></c-flow-config-value-input>
 </template>
 ```
 
-Your editor receives Flow Builder's public configuration-editor inputs and forwards them to the picker. The picker emits both a convenient component event and the standard Flow Builder configuration event when `property-name` is supplied.
+That is the whole editor. `builderContext`, `automaticOutputVariables`, `apiVersion`, and `validate()` come from the base class, and the picker dispatches the standard Flow Builder configuration event itself because `property-name` is supplied.
 
 ## Repository layout
 

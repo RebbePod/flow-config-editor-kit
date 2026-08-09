@@ -1,5 +1,59 @@
 # Component API
 
+## `c/flowConfigEditorBase`
+
+Base class for custom property editors. Extending it supplies the entire Flow Builder contract — the four public inputs, the configuration events, and `validate()` — so an editor only writes its own rules.
+
+```js
+import FlowConfigEditorBase from "c/flowConfigEditorBase";
+
+export default class MyEditor extends FlowConfigEditorBase {
+  get label() {
+    return this.input("label");
+  }
+
+  handleLabelChange(event) {
+    this.setInput(
+      "label",
+      event.detail.newValue,
+      event.detail.newValueDataType
+    );
+  }
+}
+```
+
+Inherited public properties: `builderContext`, `inputVariables`, `genericTypeMappings`, `automaticOutputVariables`, `elementInfo`, and the `validate()` method. Do not redeclare them.
+
+### Reading saved configuration
+
+| Method                                 | Returns                                                        |
+| -------------------------------------- | -------------------------------------------------------------- |
+| `input(name, fallback?, asReference?)` | Saved value for a Flow input property.                         |
+| `reference(name, fallback?)`           | Saved value coerced to `{!Resource}` form.                     |
+| `inputVariable(name)`                  | Raw input variable, including `valueDataType`.                 |
+| `inputDataType(name, fallback?)`       | The saved `valueDataType` marker.                              |
+| `genericType(typeName, fallback?)`     | Object API name bound to a generic SObject mapping.            |
+| `apiVersion`                           | Flow runtime API version, resolved across Flow Builder shapes. |
+
+### Writing configuration
+
+| Method                                | Effect                                                                                                                                         |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setInput(name, value, dataType?)`    | Assigns a Flow input property.                                                                                                                 |
+| `clearInput(name, dataType?)`         | Removes an input assignment.                                                                                                                   |
+| `setGenericType(typeName, typeValue)` | Assigns or clears a generic SObject mapping.                                                                                                   |
+| `applyCollectionChange({ ... })`      | Moves a collection selection, its generic mapping, its mirrored object name, and its dependent field together. Returns the planned transition. |
+
+### Validation
+
+Override `validateConfiguration()` to return `[{ key, errorString }]`. Register errors outside that hook with `setError(key, message)`, `clearError(key)`, and `clearErrors()`. Read the last result through `validationErrors` and `hasValidationErrors`.
+
+Inherited `validate()` merges declared errors, `validateConfiguration()` results, and the validity of every rendered input marked `data-validatable` with a `data-property` key, and mirrors each message back onto its input so the panel shows it inline.
+
+### Lifecycle hook
+
+Override `configurationChanged(source)` to derive local state when Flow Builder republishes an input. `source` is one of `builderContext`, `inputVariables`, `genericTypeMappings`, or `automaticOutputVariables`. Flow Builder publishes them in no guaranteed order, so each handler should tolerate the others being absent.
+
 ## `c-flow-config-value-input`
 
 The recommended scalar input. It combines literal entry and Flow-resource selection in one control.
@@ -48,7 +102,7 @@ The lower-level Flow resource browser.
 
 Events: `resourcechange`, with `{ name, newValue, newValueDataType, resource }`.
 
-When `property-name` is provided, selection and removal also dispatch the standard `configuration_editor_input_value_changed` or `configuration_editor_input_value_deleted` event expected by Flow Builder.
+When `property-name` is provided, selection and removal also dispatch the standard `configuration_editor_input_value_changed` event expected by Flow Builder. Removal uses the same event with a `null` value, which is how Flow Builder's custom property editor contract clears an input assignment.
 
 ## `c-flow-config-field-picker`
 
@@ -74,6 +128,7 @@ In multiple mode, `newValue` is a JSON string so it can be stored in a Flow Stri
 
 ## Shared utility modules
 
+- `flowConfigEditorBase`: the editor base class documented above.
 - `flowConfigEditorUtils`: Flow event creation, value parsing, resource collection, type normalization, labels, and icon selection.
 - `flowConfigResourceModel`: resource filtering, grouping, search, and reference lookup.
 - `flowConfigSchemaService`: cached SObject path descriptions.
