@@ -1,5 +1,69 @@
 public with sharing class FlowConfigApexTypeController {
-  private static final Map<String, Schema.SObjectType> GLOBAL_DESCRIBE = Schema.getGlobalDescribe();
+  /** `Schema.describeSObjects` accepts at most 100 names per call. */
+  private static final Integer DESCRIBE_CHUNK_SIZE = 100;
+
+  private static Map<String, Schema.SObjectType> globalDescribeCache;
+  private static Map<String, Schema.SObjectType> sobjectTypeMemo = new Map<String, Schema.SObjectType>();
+  private static Boolean flowAuthoringResolved = false;
+  private static Boolean flowAuthoringAllowed = false;
+
+  /**
+   * Enumerating every SObject is only needed to find custom settings. Resolving
+   * it lazily keeps the single-object and Apex-source entry points off the
+   * global describe path entirely.
+   */
+  private static Map<String, Schema.SObjectType> globalDescribe() {
+    if (globalDescribeCache == null) {
+      globalDescribeCache = Schema.getGlobalDescribe();
+    }
+    return globalDescribeCache;
+  }
+
+  /**
+   * Resolves one SObject name without paying for a global describe. Returns
+   * null when the name belongs to an Apex-defined type rather than an SObject.
+   */
+  private static Schema.SObjectType sobjectTypeFor(String candidate) {
+    if (String.isBlank(candidate)) {
+      return null;
+    }
+    if (sobjectTypeMemo.containsKey(candidate)) {
+      return sobjectTypeMemo.get(candidate);
+    }
+    Schema.SObjectType resolved;
+    try {
+      List<Schema.DescribeSObjectResult> described = Schema.describeSObjects(
+        new List<String>{ candidate }
+      );
+      resolved = described.isEmpty() ? null : described[0].getSObjectType();
+    } catch (Exception ignored) {
+      resolved = null;
+    }
+    sobjectTypeMemo.put(candidate, resolved);
+    return resolved;
+  }
+
+  /**
+   * `with sharing` does not enforce object permissions, and `ApexClass.Body`
+   * exposes the source of every unmanaged class in the org. Restrict source
+   * inspection to users who can actually author Flows, so assigning the
+   * framework permission set does not become a way to read Apex.
+   */
+  private static Boolean canAuthorFlows() {
+    if (!flowAuthoringResolved) {
+      flowAuthoringAllowed = ![
+          SELECT Id
+          FROM PermissionSetAssignment
+          WHERE
+            AssigneeId = :UserInfo.getUserId()
+            AND PermissionSet.PermissionsManageInteraction = TRUE
+          LIMIT 1
+        ]
+        .isEmpty();
+      flowAuthoringResolved = true;
+    }
+    return flowAuthoringAllowed;
+  }
 
   public class MemberDescriptor implements Comparable {
     @AuraEnabled
@@ -68,6 +132,11 @@ public with sharing class FlowConfigApexTypeController {
     if (String.isBlank(apexClassName)) {
       return new List<MemberDescriptor>();
     }
+    if (!canAuthorFlows()) {
+      throw new AuraHandledException(
+        'Inspecting Apex-defined types requires the Manage Flow permission.'
+      );
+    }
 
     ClassIdentity identity = parseClassIdentity(apexClassName);
     List<ApexClass> candidates = [
@@ -102,7 +171,7 @@ public with sharing class FlowConfigApexTypeController {
     if (String.isBlank(objectApiName) || String.isBlank(fieldPath)) {
       return null;
     }
-    Schema.SObjectType currentType = GLOBAL_DESCRIBE.get(objectApiName);
+    Schema.SObjectType currentType = sobjectTypeFor(objectApiName);
     if (currentType == null || !currentType.getDescribe().isAccessible()) {
       return null;
     }
@@ -170,40 +239,77 @@ public with sharing class FlowConfigApexTypeController {
   @AuraEnabled(cacheable=true)
   public static List<HierarchySettingDescriptor> describeHierarchySettings() {
     List<HierarchySettingDescriptor> settings = new List<HierarchySettingDescriptor>();
-    List<String> objectNames = new List<String>(GLOBAL_DESCRIBE.keySet());
-    objectNames.sort();
-    for (String objectName : objectNames) {
-      Schema.DescribeSObjectResult objectDescribe = GLOBAL_DESCRIBE
-        .get(objectName)
-        .getDescribe();
-      if (!objectDescribe.isAccessible() || !objectDescribe.isCustomSetting()) {
-        continue;
+    // Custom settings are always custom objects, so filtering on the API-name
+    // suffix first avoids describing every SObject in the org. A full describe
+    // per object is expensive enough to risk the synchronous CPU limit in large
+    // orgs, and only a handful of objects can ever match.
+    List<String> candidateNames = new List<String>();
+    for (String objectName : globalDescribe().keySet()) {
+      if (objectName.endsWithIgnoreCase('__c')) {
+        candidateNames.add(objectName);
       }
-      Schema.SObjectField nameToken = objectDescribe.fields.getMap()
-        .get('Name');
-      if (nameToken == null || !nameToken.getDescribe().isNillable()) {
-        continue;
+    }
+    candidateNames.sort();
+
+    for (
+      Integer offset = 0;
+      offset < candidateNames.size();
+      offset += DESCRIBE_CHUNK_SIZE
+    ) {
+      Integer limitIndex = Math.min(
+        offset + DESCRIBE_CHUNK_SIZE,
+        candidateNames.size()
+      );
+      List<String> chunk = new List<String>();
+      for (Integer index = offset; index < limitIndex; index++) {
+        chunk.add(candidateNames[index]);
       }
-      List<MemberDescriptor> fields = new List<MemberDescriptor>();
       for (
-        Schema.SObjectField fieldToken : objectDescribe.fields.getMap().values()
+        Schema.DescribeSObjectResult objectDescribe : Schema.describeSObjects(
+          chunk
+        )
       ) {
-        Schema.DescribeFieldResult fieldDescribe = fieldToken.getDescribe();
-        if (!fieldDescribe.isCustom() || !fieldDescribe.isAccessible()) {
-          continue;
+        HierarchySettingDescriptor setting = toHierarchySetting(objectDescribe);
+        if (setting != null) {
+          settings.add(setting);
         }
-        fields.add(describeField(fieldDescribe));
-      }
-      if (!fields.isEmpty()) {
-        fields.sort();
-        HierarchySettingDescriptor setting = new HierarchySettingDescriptor();
-        setting.name = objectDescribe.getName();
-        setting.label = objectDescribe.getLabel();
-        setting.fields = fields;
-        settings.add(setting);
       }
     }
     return settings;
+  }
+
+  private static HierarchySettingDescriptor toHierarchySetting(
+    Schema.DescribeSObjectResult objectDescribe
+  ) {
+    if (!objectDescribe.isAccessible() || !objectDescribe.isCustomSetting()) {
+      return null;
+    }
+    // Apex describe does not expose the hierarchy/list custom-setting kind
+    // directly. Hierarchy settings leave Name nillable; list settings require
+    // it, so a nillable Name is the supported way to tell them apart.
+    Schema.SObjectField nameToken = objectDescribe.fields.getMap().get('Name');
+    if (nameToken == null || !nameToken.getDescribe().isNillable()) {
+      return null;
+    }
+    List<MemberDescriptor> fields = new List<MemberDescriptor>();
+    for (
+      Schema.SObjectField fieldToken : objectDescribe.fields.getMap().values()
+    ) {
+      Schema.DescribeFieldResult fieldDescribe = fieldToken.getDescribe();
+      if (!fieldDescribe.isCustom() || !fieldDescribe.isAccessible()) {
+        continue;
+      }
+      fields.add(describeField(fieldDescribe));
+    }
+    if (fields.isEmpty()) {
+      return null;
+    }
+    fields.sort();
+    HierarchySettingDescriptor setting = new HierarchySettingDescriptor();
+    setting.name = objectDescribe.getName();
+    setting.label = objectDescribe.getLabel();
+    setting.fields = fields;
+    return setting;
   }
 
   private static Schema.SObjectField findField(
@@ -397,15 +503,17 @@ public with sharing class FlowConfigApexTypeController {
       descriptor.dataType = 'Time';
     } else if (new Set<String>{ 'string', 'id' }.contains(normalized)) {
       descriptor.dataType = 'String';
-    } else if (GLOBAL_DESCRIBE.containsKey(valueType)) {
-      descriptor.dataType = 'SObject';
-      descriptor.objectType = GLOBAL_DESCRIBE
-        .get(valueType)
-        .getDescribe()
-        .getName();
     } else {
-      descriptor.dataType = 'Apex';
-      descriptor.apexClass = qualifyApexType(valueType, namespacePrefix);
+      // Only a non-scalar declaration needs a describe to tell an SObject apart
+      // from an Apex-defined type.
+      Schema.SObjectType valueSObjectType = sobjectTypeFor(valueType);
+      if (valueSObjectType != null) {
+        descriptor.dataType = 'SObject';
+        descriptor.objectType = valueSObjectType.getDescribe().getName();
+      } else {
+        descriptor.dataType = 'Apex';
+        descriptor.apexClass = qualifyApexType(valueType, namespacePrefix);
+      }
     }
     return descriptor;
   }

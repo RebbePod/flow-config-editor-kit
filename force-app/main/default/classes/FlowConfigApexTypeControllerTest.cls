@@ -102,4 +102,63 @@ private class FlowConfigApexTypeControllerTest {
     List<FlowConfigApexTypeController.HierarchySettingDescriptor> result = FlowConfigApexTypeController.describeHierarchySettings();
     System.assertNotEquals(null, result);
   }
+
+  @IsTest
+  static void refusesApexSourceInspectionWithoutFlowAuthoring() {
+    User restricted = buildUserWithoutFlowAuthoring();
+
+    System.runAs(restricted) {
+      try {
+        FlowConfigApexTypeController.describeType(
+          'apex://FlowConfigApexTypeController'
+        );
+        System.assert(
+          false,
+          'Expected Apex source inspection to require Manage Flow'
+        );
+      } catch (AuraHandledException expected) {
+        System.assertNotEquals(null, expected);
+      }
+    }
+  }
+
+  @IsTest
+  static void allowsBlankTypeWithoutFlowAuthoring() {
+    User restricted = buildUserWithoutFlowAuthoring();
+
+    System.runAs(restricted) {
+      System.assertEquals(
+        0,
+        FlowConfigApexTypeController.describeType(null).size()
+      );
+    }
+  }
+
+  /**
+   * Profile names are localized, so the profile is selected by the permission
+   * under test rather than by name.
+   */
+  private static User buildUserWithoutFlowAuthoring() {
+    Profile restrictedProfile = [
+      SELECT Id
+      FROM Profile
+      WHERE PermissionsManageInteraction = FALSE AND UserType = 'Standard'
+      LIMIT 1
+    ];
+    User restricted = new User(
+      Alias = 'fcek',
+      Email = 'flow.config.kit@example.invalid',
+      EmailEncodingKey = 'UTF-8',
+      LanguageLocaleKey = 'en_US',
+      LastName = 'Restricted',
+      LocaleSidKey = 'en_US',
+      ProfileId = restrictedProfile.Id,
+      TimeZoneSidKey = 'America/Los_Angeles',
+      UserName = 'flow.config.kit.' +
+        DateTime.now().getTime() +
+        '@example.invalid'
+    );
+    insert restricted;
+    return restricted;
+  }
 }

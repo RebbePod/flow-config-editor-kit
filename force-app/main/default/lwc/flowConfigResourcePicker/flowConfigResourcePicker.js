@@ -2031,7 +2031,11 @@ export default class FlowConfigResourcePicker extends LightningElement {
 
   isTrustedVisualforceOrigin(origin) {
     try {
-      const host = new URL(origin).hostname.toLowerCase();
+      const parsed = new URL(origin);
+      if (parsed.protocol !== "https:") {
+        return false;
+      }
+      const host = parsed.hostname.toLowerCase();
       return (
         host.endsWith(".visual.force.com") ||
         host.endsWith(".vf.force.com") ||

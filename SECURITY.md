@@ -8,6 +8,8 @@ Do not open a public issue for a suspected vulnerability. Use GitHub's private v
 
 The Apex controller is declared `with sharing` and filters SObjects and fields through Salesforce describe accessibility checks. Access to the controller and Visualforce bridge is granted by the included `Flow_Config_Editor_Access` permission set; assign it only to trusted Flow builders.
 
+`with sharing` governs record access, not object permissions, so Apex-defined type inspection additionally requires the running user to hold **Manage Flow** (`PermissionsManageInteraction`). Assigning the framework permission set on its own therefore does not grant a way to read Apex source. SObject path and hierarchy-setting describes remain governed by the running user's object and field accessibility.
+
 ### Apex-defined type bridge
 
 Flow Builder does not consistently expose the members of Apex-defined types in `builderContext`. To fill that gap, `FlowConfigApexTypeBridge.page` runs in the authenticated Salesforce origin and queries the Tooling API for an Apex class symbol table.
@@ -15,7 +17,7 @@ Flow Builder does not consistently expose the members of Apex-defined types in `
 Important properties of the bridge:
 
 - The Salesforce session ID remains inside the Visualforce page and is never returned to the LWC.
-- Parent origins are validated against Salesforce domains before `postMessage` communication.
+- The `parentOrigin` parameter is untrusted input. The page validates it against an HTTPS Salesforce-domain allowlist **before installing its message listener**, re-checks the origin of every inbound message, and stays inert when the check fails. The picker applies the same check to the bridge's own origin before trusting it.
 - Class names are normalized and validated before they are placed in SOQL.
 - Only Aura-enabled fields/properties are returned to the picker.
 - Browser and Salesforce session controls remain the ultimate trust boundary.
