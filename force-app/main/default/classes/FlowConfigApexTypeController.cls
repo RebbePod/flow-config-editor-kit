@@ -48,18 +48,29 @@ public with sharing class FlowConfigApexTypeController {
    * exposes the source of every unmanaged class in the org. Restrict source
    * inspection to users who can actually author Flows, so assigning the
    * framework permission set does not become a way to read Apex.
+   *
+   * PermissionSetAssignment is itself a setup object: users without setup
+   * visibility cannot query it and get a QueryException rather than an empty
+   * result. Treat any failure as "not a Flow author" so the check fails closed.
+   * A denied user is not blocked from the picker — `loadApexMembers` falls back
+   * to the Visualforce Tooling bridge, where the platform enforces the user's
+   * own access instead of this class's.
    */
   private static Boolean canAuthorFlows() {
     if (!flowAuthoringResolved) {
-      flowAuthoringAllowed = ![
-          SELECT Id
-          FROM PermissionSetAssignment
-          WHERE
-            AssigneeId = :UserInfo.getUserId()
-            AND PermissionSet.PermissionsManageInteraction = TRUE
-          LIMIT 1
-        ]
-        .isEmpty();
+      try {
+        flowAuthoringAllowed = ![
+            SELECT Id
+            FROM PermissionSetAssignment
+            WHERE
+              AssigneeId = :UserInfo.getUserId()
+              AND PermissionSet.PermissionsManageInteraction = TRUE
+            LIMIT 1
+          ]
+          .isEmpty();
+      } catch (Exception ignored) {
+        flowAuthoringAllowed = false;
+      }
       flowAuthoringResolved = true;
     }
     return flowAuthoringAllowed;
