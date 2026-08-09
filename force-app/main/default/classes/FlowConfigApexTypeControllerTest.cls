@@ -1,0 +1,105 @@
+@IsTest
+private class FlowConfigApexTypeControllerTest {
+  @IsTest
+  static void parsesScalarCollectionRecordAndNestedMembers() {
+    String body =
+      'public class Example {' +
+      ' @AuraEnabled global Decimal amount;' +
+      ' @AuraEnabled public List<Contact> contacts { get; set; }' +
+      ' @AuraEnabled public ChildDetail detail;' +
+      ' public String ignored;' +
+      '}';
+
+    Test.startTest();
+    List<FlowConfigApexTypeController.MemberDescriptor> members = FlowConfigApexTypeController.parseBody(
+      body,
+      'sample'
+    );
+    Test.stopTest();
+
+    System.assertEquals(3, members.size());
+    System.assertEquals('amount', members[0].name);
+    System.assertEquals('Amount', members[0].label);
+    System.assertEquals('Number', members[0].dataType);
+    System.assertEquals(false, members[0].isCollection);
+    System.assertEquals('SObject', members[1].dataType);
+    System.assertEquals('Contact', members[1].objectType);
+    System.assertEquals(true, members[1].isCollection);
+    System.assertEquals('Apex', members[2].dataType);
+    System.assertEquals('sample__ChildDetail', members[2].apexClass);
+  }
+
+  @IsTest
+  static void returnsNoMembersForBlankOrUnknownTypes() {
+    System.assertEquals(
+      0,
+      FlowConfigApexTypeController.describeType(null).size()
+    );
+    try {
+      FlowConfigApexTypeController.describeType('ClassThatDoesNotExist');
+      System.assert(false, 'Expected an unresolved type error');
+    } catch (AuraHandledException expected) {
+      System.assertNotEquals(null, expected);
+    }
+  }
+
+  @IsTest
+  static void describesAnInstalledApexClassAsTypedMembers() {
+    Test.startTest();
+    List<FlowConfigApexTypeController.MemberDescriptor> members = FlowConfigApexTypeController.describeType(
+      'apex://FlowConfigApexTypeController'
+    );
+    Test.stopTest();
+
+    System.assert(members.size() >= 7, 'Expected Aura-enabled wrapper fields');
+    FlowConfigApexTypeController.MemberDescriptor nameMember;
+    for (FlowConfigApexTypeController.MemberDescriptor member : members) {
+      if (member.name == 'name') {
+        nameMember = member;
+        break;
+      }
+    }
+    System.assertNotEquals(null, nameMember);
+    System.assertEquals('String', nameMember.dataType);
+    System.assertEquals(false, nameMember.isCollection);
+  }
+
+  @IsTest
+  static void describesDeepSObjectPaths() {
+    FlowConfigApexTypeController.SObjectPathDescriptor descriptor = FlowConfigApexTypeController.describeSObjectPath(
+      'Opportunity',
+      'Account.AccountSource'
+    );
+    System.assertEquals('Account Source', descriptor.label);
+    System.assertEquals('Picklist', descriptor.dataType);
+    System.assertEquals('PICKLIST', descriptor.sourceDataType);
+    System.assertEquals(
+      new List<String>{ 'Account', 'Account Source' },
+      descriptor.labels
+    );
+    System.assertEquals('Account', descriptor.parentObjectType);
+    System.assertEquals(
+      new List<String>{ 'Account', null },
+      descriptor.objectTypes
+    );
+  }
+
+  @IsTest
+  static void exposesAccessibleRelationshipTargets() {
+    FlowConfigApexTypeController.SObjectPathDescriptor descriptor = FlowConfigApexTypeController.describeSObjectPath(
+      'Opportunity',
+      'AccountId'
+    );
+    System.assertEquals('SObject', descriptor.dataType);
+    System.assertEquals(
+      new List<String>{ 'Account' },
+      descriptor.referenceTargets
+    );
+  }
+
+  @IsTest
+  static void returnsTypedHierarchySettingMetadata() {
+    List<FlowConfigApexTypeController.HierarchySettingDescriptor> result = FlowConfigApexTypeController.describeHierarchySettings();
+    System.assertNotEquals(null, result);
+  }
+}

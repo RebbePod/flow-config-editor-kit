@@ -1,0 +1,64 @@
+:host {
+  display: block;
+}
+
+.header {
+  align-items: flex-start;
+  background: #f3f3f3;
+  border-bottom: 1px solid #c9c9c9;
+  color: #181818;
+  display: flex;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  height: auto;
+  justify-content: space-between;
+  min-height: 2.25rem;
+  padding: 0.3rem 0.5rem;
+}
+
+.breadcrumbs {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  line-height: 1.25rem;
+  min-width: 0;
+  row-gap: 0.1rem;
+}
+
+lightning-button-icon {
+  flex: 0 0 auto;
+}
+
+.breadcrumb-item {
+  align-items: center;
+  display: inline-flex;
+  min-width: 0;
+}
+
+.breadcrumb-link {
+  background: transparent;
+  border: 0;
+  color: #0b5cab;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.2rem 0.15rem;
+}
+
+.breadcrumb-link:hover,
+.breadcrumb-link:focus {
+  text-decoration: underline;
+}
+
+.breadcrumb-current {
+  font-weight: 600;
+  overflow: hidden;
+  padding: 0.2rem 0.15rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumb-separator {
+  color: #706e6b;
+  padding: 0 0.15rem;
+}

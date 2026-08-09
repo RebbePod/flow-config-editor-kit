@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>false</isExposed>
+    <masterLabel>Flow Config Framework Example Editor</masterLabel>
+    <description
+  >Example custom Flow property editor using the reusable resource and field pickers.</description>
+</LightningComponentBundle>

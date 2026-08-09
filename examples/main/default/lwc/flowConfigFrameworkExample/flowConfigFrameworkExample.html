@@ -1,0 +1,44 @@
+<template>
+  <lightning-card
+    title="Flow Config Framework Example"
+    icon-name="standard:flow"
+  >
+    <div class="slds-var-p-horizontal_medium">
+      <p class="slds-var-m-bottom_small">
+        Text: {textValue} · Number: {numberValue}
+      </p>
+      <template lwc:if={hasRecords}>
+        <p class="slds-text-title_bold slds-var-m-bottom_xx-small">
+          Single-field collection
+        </p>
+        <ul class="slds-list_dotted">
+          <template for:each={previewRecords} for:item="record">
+            <li key={record.id}>{record.value}</li>
+          </template>
+        </ul>
+      </template>
+      <template lwc:else>
+        <p class="slds-text-color_weak">
+          No single-field records were provided.
+        </p>
+      </template>
+      <template lwc:if={hasMultipleRecords}>
+        <p
+          class="slds-text-title_bold slds-var-m-top_small slds-var-m-bottom_xx-small"
+        >
+          Multi-field collection
+        </p>
+        <ul class="slds-list_dotted">
+          <template for:each={multiplePreviewRecords} for:item="record">
+            <li key={record.id}>{record.value}</li>
+          </template>
+        </ul>
+      </template>
+      <template lwc:else>
+        <p class="slds-text-color_weak slds-var-m-top_small">
+          No multi-field records were provided.
+        </p>
+      </template>
+    </div>
+  </lightning-card>
+</template>

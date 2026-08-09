@@ -1,0 +1,29 @@
+name: Bug report
+description: Report reproducible framework behavior
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Include the expected behavior and exact reproduction steps.
+    validations:
+      required: true
+  - type: input
+    id: api-version
+    attributes:
+      label: Flow API version
+  - type: input
+    id: org
+    attributes:
+      label: Org edition and Salesforce release
+  - type: textarea
+    id: metadata
+    attributes:
+      label: Relevant metadata
+      description: Describe the resource type, collection mode, and component or subflow output. Do not include secrets or customer data.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or logs

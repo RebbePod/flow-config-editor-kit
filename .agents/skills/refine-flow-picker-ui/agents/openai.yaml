@@ -1,0 +1,4 @@
+interface:
+  display_name: "Refine Flow Picker UI"
+  short_description: "Improve picker UX consistently and accessibly"
+  default_prompt: "Use $refine-flow-picker-ui to improve a resource or field picker interaction."

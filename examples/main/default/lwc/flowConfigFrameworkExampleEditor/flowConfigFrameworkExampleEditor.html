@@ -1,0 +1,139 @@
+<template>
+  <div class="editor" onflowresourcerefresh={handleResourceRefresh}>
+    <template lwc:if={hasValidationErrors}>
+      <section class="editor-errors" role="alert" aria-live="assertive">
+        <lightning-icon
+          class="editor-errors__icon"
+          icon-name="utility:error"
+          size="x-small"
+          alternative-text=""
+        ></lightning-icon>
+        <div>
+          <p class="editor-errors__title">Fix the following:</p>
+          <ul class="editor-errors__list">
+            <template for:each={validationErrors} for:item="error">
+              <li key={error.key}>{error.errorString}</li>
+            </template>
+          </ul>
+        </div>
+      </section>
+    </template>
+    <section class="collection-group" aria-label="Single field collection">
+      <c-flow-config-resource-picker
+        data-validatable
+        data-property="singleRecords"
+        label="Single Record Collection"
+        property-name="singleRecords"
+        value={singleRecords}
+        builder-context={builderContext}
+        automatic-output-variables={automaticOutputVariables}
+        api-version={effectiveApiVersion}
+        accepted-types="SObject"
+        collection="only"
+        required
+        allow-manual
+        field-level-help="Provides the record type used by the indented Single Field selector."
+        onresourcechange={handleSingleRecordsChange}
+      ></c-flow-config-resource-picker>
+
+      <div class="dependent-field">
+        <c-flow-config-field-picker
+          data-validatable
+          data-property="singleFieldApiName"
+          label="Single Field"
+          property-name="singleFieldApiName"
+          value={singleFieldApiName}
+          object-api-name={singleObjectApiName}
+          field-level-help="Selects one field from the collection above."
+          onfieldchange={handleFieldChange}
+        ></c-flow-config-field-picker>
+        <template lwc:if={singleResetMessage}>
+          <p class="field-reset-notice" role="status">
+            <lightning-icon
+              icon-name="utility:info"
+              size="xx-small"
+              alternative-text=""
+            ></lightning-icon>
+            <span>{singleResetMessage}</span>
+          </p>
+        </template>
+      </div>
+    </section>
+
+    <section class="collection-group" aria-label="Multiple field collection">
+      <c-flow-config-resource-picker
+        data-validatable
+        data-property="multipleRecords"
+        label="Multiple Record Collection"
+        property-name="multipleRecords"
+        value={multipleRecords}
+        builder-context={builderContext}
+        automatic-output-variables={automaticOutputVariables}
+        api-version={effectiveApiVersion}
+        accepted-types="SObject"
+        collection="only"
+        allow-manual
+        field-level-help="Provides the record type used by the indented Multiple Fields selector."
+        onresourcechange={handleMultipleRecordsChange}
+      ></c-flow-config-resource-picker>
+
+      <div class="dependent-field">
+        <c-flow-config-field-picker
+          data-validatable
+          data-property="displayFieldsJson"
+          label="Multiple Fields"
+          property-name="displayFieldsJson"
+          value={displayFieldsJson}
+          object-api-name={multipleObjectApiName}
+          multiple
+          field-level-help="Selects one or more fields from the collection above."
+          onfieldchange={handleFieldChange}
+        ></c-flow-config-field-picker>
+        <template lwc:if={multipleResetMessage}>
+          <p class="field-reset-notice" role="status">
+            <lightning-icon
+              icon-name="utility:info"
+              size="xx-small"
+              alternative-text=""
+            ></lightning-icon>
+            <span>{multipleResetMessage}</span>
+          </p>
+        </template>
+      </div>
+    </section>
+
+    <c-flow-config-value-input
+      data-validatable
+      data-property="textValue"
+      class="slds-var-m-top_medium"
+      label="Text Input"
+      property-name="textValue"
+      value={textValue}
+      value-data-type={textValueDataType}
+      value-type="String"
+      builder-context={builderContext}
+      automatic-output-variables={automaticOutputVariables}
+      api-version={effectiveApiVersion}
+      placeholder="Enter value or search resources..."
+      field-level-help="Tests a literal String or a reference to a String Flow resource."
+      onvaluechange={handleValueChange}
+    ></c-flow-config-value-input>
+
+    <c-flow-config-value-input
+      data-validatable
+      data-property="numberValue"
+      class="slds-var-m-top_medium"
+      label="Number Input"
+      property-name="numberValue"
+      value={numberValue}
+      value-data-type={numberValueDataType}
+      value-type="Number"
+      builder-context={builderContext}
+      automatic-output-variables={automaticOutputVariables}
+      api-version={effectiveApiVersion}
+      placeholder="Enter value or search resources..."
+      field-level-help="Tests a literal Number or a reference to a Number Flow resource."
+      onvaluechange={handleValueChange}
+    ></c-flow-config-value-input>
+  </div>
+</template>

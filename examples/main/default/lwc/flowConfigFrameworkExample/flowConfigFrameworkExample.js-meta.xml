@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Flow Config Framework Example</masterLabel>
+    <description
+  >Example Flow screen component using the reusable configuration-editor framework.</description>
+    <targets>
+        <target>lightning__FlowScreen</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig
+      targets="lightning__FlowScreen"
+      configurationEditor="c-flow-config-framework-example-editor"
+    >
+            <propertyType
+        name="TSingle"
+        extends="SObject"
+        label="Single-Field Record Type"
+      />
+            <propertyType
+        name="TMultiple"
+        extends="SObject"
+        label="Multi-Field Record Type"
+      />
+            <property
+        name="singleRecords"
+        type="{TSingle[]}"
+        label="Single-Field Records"
+        role="inputOnly"
+      />
+            <property
+        name="singleObjectApiName"
+        type="String"
+        label="Single-Field Object API Name"
+        role="inputOnly"
+      />
+            <property
+        name="multipleRecords"
+        type="{TMultiple[]}"
+        label="Multi-Field Records"
+        role="inputOnly"
+      />
+            <property
+        name="multipleObjectApiName"
+        type="String"
+        label="Multi-Field Object API Name"
+        role="inputOnly"
+      />
+            <property
+        name="singleFieldApiName"
+        type="String"
+        label="Single Display Field"
+        role="inputOnly"
+      />
+            <property
+        name="displayFieldsJson"
+        type="String"
+        label="Display Fields"
+        role="inputOnly"
+      />
+            <property
+        name="displayFieldApiName"
+        type="String"
+        label="Legacy Display Field"
+        role="inputOnly"
+      />
+            <property
+        name="textValue"
+        type="String"
+        label="Text Input"
+        role="inputOnly"
+      />
+            <property
+        name="numberValue"
+        type="Integer"
+        label="Number Input"
+        role="inputOnly"
+      />
+            <property
+        name="flowRuntimeApiVersion"
+        type="Double"
+        label="Flow Runtime API Version"
+        role="inputOnly"
+        flowRole="flowRuntimeApiVersion"
+      />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

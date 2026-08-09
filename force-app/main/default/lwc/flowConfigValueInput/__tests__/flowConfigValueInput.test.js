@@ -1,0 +1,90 @@
+import { createElement } from "lwc";
+import FlowConfigValueInput from "c/flowConfigValueInput";
+
+describe("c-flow-config-value-input", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+  });
+
+  it("commits typed input as a numeric literal", async () => {
+    const element = createElement("c-flow-config-value-input", {
+      is: FlowConfigValueInput
+    });
+    element.propertyName = "numberValue";
+    element.valueType = "Number";
+    const handler = jest.fn();
+    element.addEventListener(
+      "configuration_editor_input_value_changed",
+      handler
+    );
+    document.body.appendChild(element);
+    await Promise.resolve();
+
+    const picker = element.shadowRoot.querySelector(
+      "c-flow-config-resource-picker"
+    );
+    const input = picker.shadowRoot.querySelector("lightning-input");
+    input.dispatchEvent(new CustomEvent("focus"));
+    input.dispatchEvent(
+      new CustomEvent("change", { detail: { value: "42.5" } })
+    );
+    await Promise.resolve();
+    picker.shadowRoot.querySelector("button.manual").click();
+
+    expect(handler.mock.calls[0][0].detail).toEqual({
+      name: "numberValue",
+      newValue: 42.5,
+      newValueDataType: "Number"
+    });
+  });
+
+  it("uses one input for text literals and all scalar resource types", async () => {
+    const element = createElement("c-flow-config-value-input", {
+      is: FlowConfigValueInput
+    });
+    element.propertyName = "textValue";
+    element.valueType = "String";
+    element.builderContext = {
+      variables: [{ name: "Amount", dataType: "Number" }],
+      choices: [{ name: "YesChoice", dataType: "Boolean" }],
+      textTemplates: [{ name: "WelcomeMessage" }]
+    };
+    document.body.appendChild(element);
+    await Promise.resolve();
+
+    const picker = element.shadowRoot.querySelector(
+      "c-flow-config-resource-picker"
+    );
+    picker.shadowRoot
+      .querySelector("lightning-input")
+      .dispatchEvent(new CustomEvent("focus"));
+    await Promise.resolve();
+    const references = [...picker.shadowRoot.querySelectorAll("button.result")]
+      .map((button) => button.dataset.key)
+      .filter(Boolean);
+
+    expect(references).toEqual(
+      expect.arrayContaining([
+        "{!Amount}",
+        "{!YesChoice}",
+        "{!WelcomeMessage}",
+        "global-flow",
+        "global-user"
+      ])
+    );
+
+    const headings = [
+      ...picker.shadowRoot.querySelectorAll(".resource-group__title")
+    ].map((heading) => heading.textContent);
+    expect(headings).toEqual(
+      expect.arrayContaining([
+        "Choices",
+        "Simple Variables",
+        "Text Templates",
+        "Global Variables"
+      ])
+    );
+  });
+});

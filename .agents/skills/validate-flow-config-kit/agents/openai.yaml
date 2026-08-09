@@ -1,0 +1,4 @@
+interface:
+  display_name: "Validate Flow Config Kit"
+  short_description: "Verify tests packaging and Salesforce deploys"
+  default_prompt: "Use $validate-flow-config-kit to validate this project before release."

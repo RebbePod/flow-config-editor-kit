@@ -1,0 +1,4 @@
+interface:
+  display_name: "Extend Flow Config Kit"
+  short_description: "Build maintainable framework features safely"
+  default_prompt: "Use $extend-flow-config-kit to add a reusable feature to this framework."

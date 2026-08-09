@@ -1,0 +1,76 @@
+.editor {
+  padding-bottom: 0.5rem;
+}
+
+.editor-errors {
+  background: #fef1ee;
+  border: 1px solid #ea001e;
+  border-radius: 0.25rem;
+  color: #8e030f;
+  display: flex;
+  font-size: 0.75rem;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+}
+
+.editor-errors__icon {
+  --slds-c-icon-color-foreground-default: #ba0517;
+  flex: 0 0 auto;
+}
+
+.editor-errors__title {
+  font-weight: 700;
+}
+
+.editor-errors__list {
+  list-style: disc;
+  margin: 0.15rem 0 0 1rem;
+}
+
+.collection-group {
+  min-width: 0;
+}
+
+.dependent-field {
+  margin: -0.15rem 0 0 0.35rem;
+  padding: 0.1rem 0 0.1rem 0.5rem;
+  position: relative;
+}
+
+.dependent-field::before {
+  border-left: 1px solid #c9c9c9;
+  content: "";
+  height: 2.55rem;
+  left: 0;
+  position: absolute;
+  top: 0.25rem;
+}
+
+.dependent-field::after {
+  background: #8e8e8e;
+  border: 1px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #c9c9c9;
+  content: "";
+  height: 0.4rem;
+  left: -0.17rem;
+  position: absolute;
+  top: 2.6rem;
+  width: 0.4rem;
+}
+
+.field-reset-notice {
+  align-items: center;
+  color: #444;
+  display: flex;
+  font-size: 0.72rem;
+  gap: 0.3rem;
+  line-height: 1rem;
+  margin: 0.25rem 0 0 0.15rem;
+}
+
+.field-reset-notice lightning-icon {
+  --slds-c-icon-color-foreground-default: #706e6b;
+  flex: 0 0 auto;
+}

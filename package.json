@@ -1,0 +1,39 @@
+{
+  "name": "flow-config-editor-kit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reusable resource and field pickers for Salesforce Flow custom property editors.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "test": "npm run test:unit",
+    "test:unit": "sfdx-lwc-jest -- --runInBand",
+    "test:unit:watch": "sfdx-lwc-jest --watch",
+    "test:coverage": "jest --config jest.framework.config.js --runInBand --coverage",
+    "lint": "eslint \"force-app/main/default/lwc/**/*.js\" \"examples/main/default/lwc/**/*.js\"",
+    "format": "prettier --write \"**/*.{cls,css,html,js,json,md,page,xml,yaml,yml}\"",
+    "format:check": "prettier --check \"**/*.{cls,css,html,js,json,md,page,xml,yaml,yml}\"",
+    "check:api-version": "node scripts/check-api-version.js",
+    "check:dependencies": "npm outdated",
+    "verify": "npm run check:api-version && npm run lint && npm run test:coverage && npm run format:check",
+    "deploy:core": "sf project deploy start --source-dir force-app",
+    "deploy:examples": "sf project deploy start --source-dir examples",
+    "assign:permission": "sf org assign permset --name Flow_Config_Editor_Access"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/eslint-parser": "^7.29.7",
+    "@lwc/eslint-plugin-lwc": "^3.5.0",
+    "@prettier/plugin-xml": "^3.4.2",
+    "@salesforce/eslint-config-lwc": "^4.1.2",
+    "@salesforce/eslint-plugin-lightning": "^2.0.0",
+    "@salesforce/sfdx-lwc-jest": "^7.9.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jest": "^29.16.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-apex": "^2.3.0"
+  }
+}
