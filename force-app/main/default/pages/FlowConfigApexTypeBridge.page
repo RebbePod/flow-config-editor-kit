@@ -22,14 +22,22 @@
           var PARENT_ORIGIN =
             "{!JSENCODE($CurrentPage.parameters.parentOrigin)}";
 
+          var TRUSTED_PARENT_SUFFIXES = [
+            ".lightning.force.com",
+            ".lightning.salesforce.com",
+            ".salesforce.com"
+          ];
+
           function isTrustedParent(origin) {
             try {
-              var host = new URL(origin).hostname.toLowerCase();
-              return (
-                host.endsWith(".lightning.force.com") ||
-                host.endsWith(".lightning.salesforce.com") ||
-                host.endsWith(".salesforce.com")
-              );
+              var parsed = new URL(origin);
+              if (parsed.protocol !== "https:") {
+                return false;
+              }
+              var host = parsed.hostname.toLowerCase();
+              return TRUSTED_PARENT_SUFFIXES.some(function (suffix) {
+                return host.endsWith(suffix);
+              });
             } catch (error) {
               return false;
             }
@@ -308,10 +316,19 @@
             });
           }
 
+          // parentOrigin arrives as a URL parameter, so it is untrusted input.
+          // Refuse to install the listener at all unless it resolves to a
+          // Salesforce origin. Without this guard a page that frames the bridge
+          // could name its own origin and read back Tooling API results.
+          if (!isTrustedParent(PARENT_ORIGIN)) {
+            return;
+          }
+
           window.addEventListener("message", async function (event) {
             if (
               event.source !== window.parent ||
-              event.origin !== PARENT_ORIGIN
+              event.origin !== PARENT_ORIGIN ||
+              !isTrustedParent(event.origin)
             ) {
               return;
             }
@@ -357,12 +374,10 @@
             }
           });
 
-          if (isTrustedParent(PARENT_ORIGIN)) {
-            window.parent.postMessage(
-              { channel: CHANNEL, action: "ready" },
-              PARENT_ORIGIN
-            );
-          }
+          window.parent.postMessage(
+            { channel: CHANNEL, action: "ready" },
+            PARENT_ORIGIN
+          );
         })();
       </script>
     </body>
