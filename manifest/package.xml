@@ -6,6 +6,7 @@
         <name>ApexClass</name>
     </types>
     <types>
+        <members>flowConfigEditorBase</members>
         <members>flowConfigEditorUtils</members>
         <members>flowConfigFieldPicker</members>
         <members>flowConfigGenericTypeCoordinator</members>

@@ -35,43 +35,58 @@ Declare the custom property editor on the consuming component's Flow target conf
 </targetConfig>
 ```
 
-Flow Builder supplies these public properties to the editor:
+Then extend `c/flowConfigEditorBase`. It declares the four public properties Flow Builder supplies (`builderContext`, `inputVariables`, `genericTypeMappings`, `automaticOutputVariables`), plus `elementInfo` and `validate()`, so your editor only writes its own rules.
 
 ```js
-import { LightningElement, api } from "lwc";
+import FlowConfigEditorBase from "c/flowConfigEditorBase";
 
-export default class MyComponentEditor extends LightningElement {
-  @api builderContext;
-  @api inputVariables = [];
-  @api genericTypeMappings = [];
-  @api automaticOutputVariables = {};
-  @api elementInfo;
+export default class MyComponentEditor extends FlowConfigEditorBase {
+  get defaultValue() {
+    return this.input("defaultValue");
+  }
+
+  get defaultValueDataType() {
+    return this.inputDataType("defaultValue", "String");
+  }
+
+  handleValueChange(event) {
+    // The picker already emitted the standard event because property-name is
+    // set. Handle this only when the editor needs to react to the change.
+    this.clearErrors();
+  }
+
+  clearDefault() {
+    this.clearInput("defaultValue");
+  }
+
+  validateConfiguration() {
+    return this.defaultValue
+      ? []
+      : [{ key: "defaultValue", errorString: "Default Value is required." }];
+  }
 }
 ```
 
-Use `getInputValue` or `getInputVariable` from `c/flowConfigEditorUtils` to read saved configuration. Use the supplied event creators to update Flow Builder:
+Mark each rendered input with `data-validatable` and `data-property` so the inherited `validate()` can mirror errors onto it:
 
-```js
-import {
-  createInputValueChangedEvent,
-  createInputValueDeletedEvent,
-  getInputValue
-} from "c/flowConfigEditorUtils";
-
-set inputVariables(value) {
-  this._inputVariables = value || [];
-  this.defaultValue = getInputValue(this._inputVariables, "defaultValue", null);
-}
-
-handleValueChange(event) {
-  this.defaultValue = event.detail.newValue;
-  // The picker also emits the standard event when property-name is set.
-}
-
-clearDefault() {
-  this.dispatchEvent(createInputValueDeletedEvent("defaultValue"));
-}
+```html
+<c-flow-config-value-input
+  data-validatable
+  data-property="defaultValue"
+  label="Default Value"
+  property-name="defaultValue"
+  value="{defaultValue}"
+  value-data-type="{defaultValueDataType}"
+  builder-context="{builderContext}"
+  automatic-output-variables="{automaticOutputVariables}"
+  api-version="{apiVersion}"
+  onvaluechange="{handleValueChange}"
+></c-flow-config-value-input>
 ```
+
+Do not redeclare the inherited `@api` properties. If you need to derive local state when Flow Builder republishes one, override `configurationChanged(source)` instead.
+
+If you would rather not extend the base class, `c/flowConfigEditorUtils` still exports `getInputValue`, `getInputVariable`, and the event creators directly.
 
 ## Choose the right picker
 
@@ -85,7 +100,11 @@ For a collection that can accept any SObject, define a generic property type on 
 
 ## Validation
 
-Flow Builder calls the editor's `validate()` method. Return an array of objects shaped as `{ key, errorString }`. Reusable inputs expose `setCustomValidity()`, `validationMessage`, and `reportValidity()` so the editor can show the same error inline and in its summary.
+Flow Builder calls the editor's `validate()` method and expects an array of `{ key, errorString }`.
+
+`c/flowConfigEditorBase` implements `validate()` for you. Put business rules in `validateConfiguration()`, and mark inputs with `data-validatable` / `data-property`; the base merges your rules with each picker's own validity and mirrors every message onto its input so the same error appears inline and in the summary.
+
+Editors that do not extend the base can drive this themselves — every reusable input exposes `setCustomValidity()`, `validationMessage`, and `reportValidity()`.
 
 ## Next steps
 

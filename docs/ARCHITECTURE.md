@@ -7,6 +7,8 @@ Flow Builder
   │ builderContext / inputVariables / mappings / outputs
   ▼
 Consuming custom property editor (examples/...Editor)
+  │    extends flowConfigEditorBase
+  │      └─ inputs, configuration events, generic types, validate()
   ├─ flowConfigValueInput
   │    └─ flowConfigResourcePicker
   └─ flowConfigFieldPicker
@@ -19,6 +21,10 @@ Consuming custom property editor (examples/...Editor)
 The consuming editor owns business rules: which inputs are required, which collection controls which field picker, and which Flow properties are updated. The framework owns discovery, filtering, navigation, rendering, and standard event construction.
 
 ## Layers
+
+### Consumer base
+
+`flowConfigEditorBase` owns the half of a custom property editor that is identical in every adopter: the four Flow Builder inputs, configuration-event dispatch, generic type-mapping transitions, and the `validate()` contract. It holds no business rules and renders nothing, so an editor that extends it stays free to declare its own properties, dependencies, and template.
 
 ### Presentation
 

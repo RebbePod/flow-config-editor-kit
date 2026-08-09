@@ -1,20 +1,15 @@
-import { LightningElement, api } from "lwc";
-import {
-  createGenericTypeMappingChangedEvent,
-  createInputValueChangedEvent,
-  createInputValueDeletedEvent,
-  getInputVariable,
-  getInputValue
-} from "c/flowConfigEditorUtils";
-import { planCollectionChange } from "c/flowConfigGenericTypeCoordinator";
+import FlowConfigEditorBase from "c/flowConfigEditorBase";
 
-export default class FlowConfigFrameworkExampleEditor extends LightningElement {
-  @api elementInfo;
-
-  _builderContext = {};
-  _inputVariables = [];
-  _genericTypeMappings = [];
-  _automaticOutputVariables = {};
+/**
+ * Reference custom property editor.
+ *
+ * Everything Flow Builder requires of every editor — reading `inputVariables`,
+ * dispatching configuration events, keeping generic type mappings in step, and
+ * answering `validate()` — comes from `c/flowConfigEditorBase`. What remains
+ * here is only this component's own rules: which inputs exist, which collection
+ * feeds which field picker, and what counts as valid.
+ */
+export default class FlowConfigFrameworkExampleEditor extends FlowConfigEditorBase {
   singleRecords = null;
   singleObjectApiName = null;
   multipleRecords = null;
@@ -30,128 +25,53 @@ export default class FlowConfigFrameworkExampleEditor extends LightningElement {
   multipleResetMessage = "";
   singleResetTimer;
   multipleResetTimer;
-  validationErrors = [];
   repairedMappingKey = "";
   mappingRepairScheduled = false;
 
-  @api
-  get builderContext() {
-    return this._builderContext;
-  }
-  set builderContext(value) {
-    this._builderContext = this.cloneBuilderContext(value);
-  }
-
-  @api
-  get automaticOutputVariables() {
-    return this._automaticOutputVariables;
-  }
-  set automaticOutputVariables(value) {
-    this._automaticOutputVariables = this.cloneAutomaticOutputs(value);
-  }
-
-  cloneBuilderContext(value) {
-    const context = value || {};
-    return {
-      ...context,
-      screens: [...(context.screens || [])]
-    };
-  }
-
-  cloneAutomaticOutputs(value) {
-    if (!value || typeof value === "string" || Array.isArray(value)) {
-      return value || {};
+  configurationChanged(source) {
+    if (source === "inputVariables") {
+      this.hydrateFromInputVariables();
+    } else if (source === "genericTypeMappings") {
+      this.adoptMappedObjectTypes();
     }
-    return Object.fromEntries(
-      Object.entries(value).map(([key, outputs]) => [
-        key,
-        Array.isArray(outputs) ? [...outputs] : outputs
-      ])
-    );
   }
 
-  @api
-  get inputVariables() {
-    return this._inputVariables;
-  }
-  set inputVariables(value) {
-    this._inputVariables = value || [];
-    const legacyRecords = getInputValue(
-      this._inputVariables,
-      "records",
-      null,
-      true
-    );
-    const legacyObjectApiName = getInputValue(
-      this._inputVariables,
+  /**
+   * Flow Builder may publish `inputVariables` and `genericTypeMappings` in
+   * either order, so each source fills in what the other has not supplied yet.
+   */
+  hydrateFromInputVariables() {
+    const legacyRecords = this.reference("records");
+    const legacyObjectApiName = this.input(
       "objectApiName",
-      this.legacyMappedObjectType
+      this.genericType("T")
     );
-    this.singleRecords = getInputValue(
-      this._inputVariables,
-      "singleRecords",
-      legacyRecords,
-      true
-    );
-    this.multipleRecords = getInputValue(
-      this._inputVariables,
-      "multipleRecords",
-      null,
-      true
-    );
-    this.singleObjectApiName = getInputValue(
-      this._inputVariables,
+    this.singleRecords = this.reference("singleRecords", legacyRecords);
+    this.multipleRecords = this.reference("multipleRecords");
+    this.singleObjectApiName = this.input(
       "singleObjectApiName",
-      this.singleMappedObjectType || legacyObjectApiName
+      this.genericType("TSingle") || legacyObjectApiName
     );
-    this.multipleObjectApiName = getInputValue(
-      this._inputVariables,
+    this.multipleObjectApiName = this.input(
       "multipleObjectApiName",
-      this.multipleMappedObjectType
+      this.genericType("TMultiple")
     );
-    this.singleFieldApiName = getInputValue(
-      this._inputVariables,
-      "singleFieldApiName",
-      null
-    );
-    const legacyDisplayField = getInputValue(
-      this._inputVariables,
-      "displayFieldApiName",
-      null
-    );
-    this.displayFieldsJson = getInputValue(
-      this._inputVariables,
+    this.singleFieldApiName = this.input("singleFieldApiName");
+    const legacyDisplayField = this.input("displayFieldApiName");
+    this.displayFieldsJson = this.input(
       "displayFieldsJson",
       legacyDisplayField ? JSON.stringify([legacyDisplayField]) : null
     );
-    const textVariable = getInputVariable(this._inputVariables, "textValue");
-    const numberVariable = getInputVariable(
-      this._inputVariables,
-      "numberValue"
-    );
-    this.textValue = getInputValue(this._inputVariables, "textValue", null);
-    this.textValueDataType = textVariable?.valueDataType || "String";
-    this.numberValue = getInputValue(this._inputVariables, "numberValue", null);
-    this.numberValueDataType = numberVariable?.valueDataType || "Number";
-    this.flowRuntimeApiVersion = getInputValue(
-      this._inputVariables,
-      "flowRuntimeApiVersion",
-      null
-    );
+    this.textValue = this.input("textValue");
+    this.textValueDataType = this.inputDataType("textValue", "String");
+    this.numberValue = this.input("numberValue");
+    this.numberValueDataType = this.inputDataType("numberValue", "Number");
+    this.flowRuntimeApiVersion = this.input("flowRuntimeApiVersion");
   }
 
-  @api
-  get genericTypeMappings() {
-    return this._genericTypeMappings;
-  }
-  set genericTypeMappings(value) {
-    this._genericTypeMappings = value || [];
-    if (!this.singleObjectApiName && this.singleMappedObjectType) {
-      this.singleObjectApiName = this.singleMappedObjectType;
-    }
-    if (!this.multipleObjectApiName && this.multipleMappedObjectType) {
-      this.multipleObjectApiName = this.multipleMappedObjectType;
-    }
+  adoptMappedObjectTypes() {
+    this.singleObjectApiName ||= this.genericType("TSingle");
+    this.multipleObjectApiName ||= this.genericType("TMultiple");
   }
 
   renderedCallback() {
@@ -165,64 +85,29 @@ export default class FlowConfigFrameworkExampleEditor extends LightningElement {
     });
   }
 
+  /**
+   * A generic type left unmapped blocks Flow activation, so an unused second
+   * collection inherits the object type of the one that is configured.
+   */
   repairUnusedGenericTypeMappings() {
     const fallbackObjectType =
-      this.singleObjectApiName || this.singleMappedObjectType;
+      this.singleObjectApiName || this.genericType("TSingle");
     if (!fallbackObjectType) {
       return;
     }
-
-    const repairs = [];
-    if (!this.multipleRecords && !this.multipleMappedObjectType) {
-      repairs.push(["TMultiple", fallbackObjectType]);
+    if (this.multipleRecords || this.genericType("TMultiple")) {
+      return;
     }
-
-    const repairKey = repairs
-      .map(([typeName, typeValue]) => `${typeName}:${typeValue}`)
-      .join("|");
-    if (!repairKey || repairKey === this.repairedMappingKey) {
+    const repairKey = `TMultiple:${fallbackObjectType}`;
+    if (repairKey === this.repairedMappingKey) {
       return;
     }
     this.repairedMappingKey = repairKey;
-    repairs.forEach(([typeName, typeValue]) => {
-      this.dispatchEvent(
-        createGenericTypeMappingChangedEvent(typeName, typeValue)
-      );
-    });
-  }
-
-  get legacyMappedObjectType() {
-    return (
-      this._genericTypeMappings.find((mapping) => mapping.typeName === "T")
-        ?.typeValue || null
-    );
-  }
-
-  get singleMappedObjectType() {
-    return (
-      this._genericTypeMappings.find(
-        (mapping) => mapping.typeName === "TSingle"
-      )?.typeValue || null
-    );
-  }
-
-  get multipleMappedObjectType() {
-    return (
-      this._genericTypeMappings.find(
-        (mapping) => mapping.typeName === "TMultiple"
-      )?.typeValue || null
-    );
+    this.setGenericType("TMultiple", fallbackObjectType);
   }
 
   get effectiveApiVersion() {
-    return (
-      this.flowRuntimeApiVersion ||
-      this._builderContext.flowRuntimeApiVersion ||
-      this._builderContext.apiVersion ||
-      this.elementInfo?.flowRuntimeApiVersion ||
-      this.elementInfo?.apiVersion ||
-      null
-    );
+    return this.flowRuntimeApiVersion || this.apiVersion;
   }
 
   handleSingleRecordsChange(event) {
@@ -234,82 +119,59 @@ export default class FlowConfigFrameworkExampleEditor extends LightningElement {
   }
 
   handleRecordsChange(mode, event) {
-    this.validationErrors = [];
+    this.clearErrors();
     const { newValue, resource } = event.detail;
     const isSingle = mode === "single";
-    const recordsProperty = isSingle ? "singleRecords" : "multipleRecords";
     const objectProperty = isSingle
       ? "singleObjectApiName"
       : "multipleObjectApiName";
-    const fieldProperty = isSingle ? "singleFieldApiName" : "displayFieldsJson";
-    const typeName = isSingle ? "TSingle" : "TMultiple";
-    const currentObjectType = this[objectProperty];
-    const hadDependentSelection = Boolean(this[fieldProperty]);
-    this[recordsProperty] = newValue;
-    const nextObjectType = resource?.objectType || null;
-    const transition = planCollectionChange({
+    const dependentProperty = isSingle
+      ? "singleFieldApiName"
+      : "displayFieldsJson";
+    const hadDependentSelection = Boolean(this[dependentProperty]);
+
+    this[isSingle ? "singleRecords" : "multipleRecords"] = newValue;
+
+    const transition = this.applyCollectionChange({
+      objectProperty,
+      dependentProperty,
+      typeName: isSingle ? "TSingle" : "TMultiple",
       newValue,
-      objectType: nextObjectType,
-      currentObjectType,
-      dependentValue: this[fieldProperty],
+      objectType: resource?.objectType || null,
+      currentObjectType: this[objectProperty],
+      dependentValue: this[dependentProperty],
       fallbackObjectType:
         !newValue && !isSingle ? this.singleObjectApiName : null
     });
     if (!transition.changed) {
       return;
     }
+
     this[objectProperty] = transition.nextObjectType;
-    this[fieldProperty] = null;
+    this[dependentProperty] = null;
     if (transition.showResetNotice && hadDependentSelection) {
       this.showFieldResetNotice(mode);
     }
-    this.dispatchCollectionTypeChange({
-      isSingle,
-      typeName,
-      objectProperty,
-      fieldProperty,
-      objectType: transition.nextObjectType
-    });
-  }
-
-  dispatchCollectionTypeChange({
-    isSingle,
-    typeName,
-    objectProperty,
-    fieldProperty,
-    objectType
-  }) {
-    this.dispatchEvent(
-      createGenericTypeMappingChangedEvent(typeName, objectType)
-    );
     if (
       isSingle &&
-      objectType &&
+      transition.nextObjectType &&
       !this.multipleRecords &&
-      !this.multipleMappedObjectType
+      !this.genericType("TMultiple")
     ) {
-      this.repairedMappingKey = `TMultiple:${objectType}`;
-      this.dispatchEvent(
-        createGenericTypeMappingChangedEvent("TMultiple", objectType)
-      );
+      this.repairedMappingKey = `TMultiple:${transition.nextObjectType}`;
+      this.setGenericType("TMultiple", transition.nextObjectType);
     }
-    this.dispatchEvent(
-      objectType
-        ? createInputValueChangedEvent(objectProperty, objectType, "String")
-        : createInputValueDeletedEvent(objectProperty)
-    );
-    this.dispatchEvent(createInputValueDeletedEvent(fieldProperty));
   }
 
   handleFieldChange(event) {
-    this.validationErrors = [];
+    this.clearErrors();
     if (event.detail.name === "singleFieldApiName") {
       this.singleFieldApiName = event.detail.newValue;
       this.clearFieldResetNotice("single");
     } else {
       this.displayFieldsJson = event.detail.newValue;
       this.clearFieldResetNotice("multiple");
-      this.dispatchEvent(createInputValueDeletedEvent("displayFieldApiName"));
+      this.clearInput("displayFieldApiName");
     }
   }
 
@@ -345,7 +207,7 @@ export default class FlowConfigFrameworkExampleEditor extends LightningElement {
   }
 
   handleValueChange(event) {
-    this.validationErrors = [];
+    this.clearErrors();
     const { name, newValue, newValueDataType } = event.detail;
     if (name === "textValue") {
       this.textValue = newValue;
@@ -364,17 +226,10 @@ export default class FlowConfigFrameworkExampleEditor extends LightningElement {
     }
     // A state-neutral configuration event asks Flow Builder to republish its
     // current automaticOutputVariables, including unsaved screen components.
-    this.dispatchEvent(
-      createInputValueChangedEvent(
-        name,
-        currentValue,
-        currentValueDataType || "String"
-      )
-    );
+    this.setInput(name, currentValue, currentValueDataType || "String");
   }
 
-  @api
-  validate() {
+  validateConfiguration() {
     const errors = [];
     if (!this.singleRecords) {
       errors.push({
@@ -410,28 +265,7 @@ export default class FlowConfigFrameworkExampleEditor extends LightningElement {
           "Number Input must be a number or a compatible Flow resource."
       });
     }
-
-    const errorsByKey = new Map(
-      errors.map((error) => [error.key, error.errorString])
-    );
-    this.template
-      .querySelectorAll("[data-validatable]")
-      .forEach((component) => {
-        const key = component.dataset.property;
-        component.setCustomValidity?.(errorsByKey.get(key) || "");
-        component.reportValidity();
-        if (component.validationMessage && !errorsByKey.has(key)) {
-          const errorString = component.validationMessage;
-          errors.push({ key, errorString });
-          errorsByKey.set(key, errorString);
-        }
-      });
-    this.validationErrors = errors;
     return errors;
-  }
-
-  get hasValidationErrors() {
-    return this.validationErrors.length > 0;
   }
 
   get isValidDisplayFieldsJson() {
