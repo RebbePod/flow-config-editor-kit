@@ -7,6 +7,13 @@ import {
   getInputVariable
 } from "c/flowConfigEditorUtils";
 import { planCollectionChange } from "c/flowConfigGenericTypeCoordinator";
+import {
+  normalizeSchema,
+  objectTypeFor,
+  requiredErrors,
+  sourceDescriptor
+} from "c/flowConfigEditorSchema";
+import schemaTemplate from "./flowConfigEditorBase.html";
 
 /**
  * Base class for Flow Builder custom property editors.
@@ -37,6 +44,14 @@ import { planCollectionChange } from "c/flowConfigGenericTypeCoordinator";
  * Everything else is intended to be called, not replaced.
  */
 export default class FlowConfigEditorBase extends LightningElement {
+  /**
+   * Optional declarative schema. When a subclass sets it, the base renders the
+   * described controls and keeps their values, generic type mappings, and
+   * required-value errors in step without any further code. Leave it unset to
+   * drive everything through the methods below and your own template.
+   */
+  static flowProperties = null;
+
   @api elementInfo;
 
   _builderContext = {};
@@ -45,6 +60,10 @@ export default class FlowConfigEditorBase extends LightningElement {
   _automaticOutputVariables = {};
   _errors = new Map();
   _validationErrors = [];
+  _schema = null;
+  schemaValues = {};
+  schemaDataTypes = {};
+  schemaObjectTypes = {};
 
   /* ------------------------------------------------------------------ *
    * Flow Builder contract
@@ -104,10 +123,131 @@ export default class FlowConfigEditorBase extends LightningElement {
   /**
    * Called after Flow Builder republishes any of the four inputs above. The
    * argument names which one. Override to derive local state; the default
-   * implementation does nothing.
+   * implementation refreshes declarative schema values and does nothing else.
    */
-  // eslint-disable-next-line no-unused-vars
-  configurationChanged(source) {}
+  configurationChanged(source) {
+    if (
+      this.hasSchema &&
+      (source === "inputVariables" || source === "genericTypeMappings")
+    ) {
+      this.refreshSchemaValues();
+    }
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Declarative schema
+   * ------------------------------------------------------------------ */
+
+  get schema() {
+    if (this._schema === null) {
+      this._schema = normalizeSchema(this.constructor.flowProperties);
+    }
+    return this._schema;
+  }
+
+  get hasSchema() {
+    return this.schema.length > 0;
+  }
+
+  /**
+   * A schema-driven editor needs no template of its own. Anything else keeps
+   * whatever template its own bundle provides.
+   */
+  render() {
+    return this.hasSchema ? schemaTemplate : super.render();
+  }
+
+  refreshSchemaValues() {
+    const values = {};
+    const dataTypes = {};
+    const objectTypes = {};
+    const readers = {
+      input: (name) => this.input(name),
+      genericType: (typeName) => this.genericType(typeName)
+    };
+
+    this.schema.forEach((descriptor) => {
+      values[descriptor.name] = this.input(
+        descriptor.name,
+        null,
+        descriptor.isResource
+      );
+      dataTypes[descriptor.name] = this.inputDataType(
+        descriptor.name,
+        descriptor.isResource ? "reference" : descriptor.type
+      );
+      if (descriptor.isResource) {
+        objectTypes[descriptor.name] = objectTypeFor(descriptor, readers);
+      }
+    });
+
+    // A field picker takes its object type from the resource it depends on.
+    this.schema
+      .filter((descriptor) => descriptor.isField)
+      .forEach((descriptor) => {
+        const source = sourceDescriptor(descriptor, this.schema);
+        objectTypes[descriptor.name] = source
+          ? objectTypes[source.name] || null
+          : null;
+      });
+
+    this.schemaValues = values;
+    this.schemaDataTypes = dataTypes;
+    this.schemaObjectTypes = objectTypes;
+  }
+
+  /**
+   * Applies one change from the schema-driven form. A resource selection also
+   * moves its generic type mapping, mirrored object name, and any dependent
+   * field, which is the part editors most often get wrong by hand.
+   */
+  handleConfigChange(event) {
+    const { name, newValue, newValueDataType, resource } = event.detail;
+    const descriptor = this.schema.find((entry) => entry.name === name);
+    if (!descriptor) {
+      return;
+    }
+    this.clearError(name);
+
+    if (!descriptor.isResource) {
+      this.schemaValues = { ...this.schemaValues, [name]: newValue };
+      this.schemaDataTypes = {
+        ...this.schemaDataTypes,
+        [name]: newValueDataType
+      };
+      return;
+    }
+
+    const dependents = this.schema.filter(
+      (entry) => entry.dependsOn === descriptor.name
+    );
+    const transition = this.applyCollectionChange({
+      objectProperty: descriptor.objectProperty,
+      dependentProperty: dependents[0]?.name || null,
+      typeName: descriptor.genericType,
+      newValue,
+      objectType: resource?.objectType || null,
+      currentObjectType: this.schemaObjectTypes[descriptor.name] || null,
+      dependentValue: this.schemaValues[dependents[0]?.name] || null
+    });
+
+    const values = { ...this.schemaValues, [name]: newValue };
+    const objectTypes = { ...this.schemaObjectTypes };
+    if (transition.changed) {
+      objectTypes[descriptor.name] = transition.nextObjectType;
+      dependents.forEach((dependent) => {
+        values[dependent.name] = null;
+        objectTypes[dependent.name] = transition.nextObjectType;
+        // The first dependent was cleared by applyCollectionChange; the rest
+        // still need their own deletion event.
+        if (dependent.name !== dependents[0].name) {
+          this.clearInput(dependent.name);
+        }
+      });
+    }
+    this.schemaValues = values;
+    this.schemaObjectTypes = objectTypes;
+  }
 
   /* ------------------------------------------------------------------ *
    * Reading saved configuration
@@ -277,6 +417,11 @@ export default class FlowConfigEditorBase extends LightningElement {
     };
 
     this._errors.forEach((errorString, key) => record(key, errorString));
+    if (this.hasSchema) {
+      requiredErrors(this.schema, this.schemaValues).forEach((error) =>
+        record(error.key, error.errorString)
+      );
+    }
     (this.validateConfiguration() || []).forEach((error) =>
       record(error?.key, error?.errorString)
     );
@@ -291,6 +436,13 @@ export default class FlowConfigEditorBase extends LightningElement {
           record(key, component.validationMessage);
         }
       });
+
+    // Schema-driven controls live inside the form's shadow root, so the form
+    // mirrors and reports them on this editor's behalf.
+    this.template
+      .querySelector("c-flow-config-editor-form")
+      ?.collectValidity(errorsByKey)
+      ?.forEach((error) => record(error.key, error.errorString));
 
     this._validationErrors = errors;
     return errors;
