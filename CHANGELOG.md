@@ -13,6 +13,7 @@ All notable changes will be documented here. This project follows semantic versi
 - Apex and Visualforce metadata services for schema and Apex-defined type discovery.
 - Optional example package and automated LWC/Apex tests.
 - Repository-local AI contributor skills and validation guidance.
+- `docs/llms.txt`, a single self-contained reference for coding agents building an editor with the framework, and a consumer-facing `build-flow-config-editor` skill that can be copied into a downstream project.
 - `flowConfigEditorBase`, a base class that supplies the whole Flow Builder custom property editor contract — public inputs, configuration events, generic type-mapping transitions, and `validate()` — so consuming editors carry only their own rules.
 - A declarative `static flowProperties` schema on that base class, rendered by `flowConfigEditorForm` and normalized by `flowConfigEditorSchema`, reducing a straightforward editor to one file with no template or event handlers.
 
