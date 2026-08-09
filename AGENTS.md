@@ -2,6 +2,12 @@
 
 This repository is the **Flow Config Editor Kit for Salesforce**, an Apache-2.0-licensed Salesforce DX project for reusable Flow custom property editor components.
 
+## First: are you changing the framework or using it?
+
+**Using it** — building or changing a custom property editor for a Flow screen component, in this repository or any other — read `docs/llms.txt` completely and follow `.agents/skills/build-flow-config-editor/SKILL.md`. Nothing below this section applies. `docs/llms.txt` is self-contained by design; it is the whole contract in one file.
+
+**Changing it** — altering the framework's own components, services, or public contracts — continue below.
+
 ## Load the relevant skill
 
 - For features, refactors, new resource families, data types, wrappers, or public APIs, read `.agents/skills/extend-flow-config-kit/SKILL.md` completely.

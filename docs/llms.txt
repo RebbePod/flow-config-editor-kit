@@ -1,0 +1,395 @@
+# Flow Config Editor Kit — complete reference for coding agents
+
+Single-file reference for building a Salesforce Flow **custom property editor** with this framework. Everything needed is on this page; you should not have to open another file.
+
+Unnamespaced package. Components resolve under the `c` namespace: `c/flowConfigEditorBase`, `c-flow-config-value-input`, and so on.
+
+---
+
+## 1. What this framework is for
+
+A Flow **screen component** (an LWC exposed to `lightning__FlowScreen`) can declare a **custom property editor** — another LWC that renders the configuration panel a Flow admin sees in Flow Builder.
+
+Flow Builder hands that editor four inputs and expects specific events back. This framework supplies both sides: a base class that owns the contract, and pickers that browse Flow resources, SObject fields, and Apex-defined types.
+
+Two files are involved:
+
+1. the **screen component** (`myComponent`) — declares its properties in `myComponent.js-meta.xml`
+2. the **editor** (`myComponentEditor`) — extends `c/flowConfigEditorBase`
+
+---
+
+## 2. Wire the editor to the component
+
+In the screen component's `.js-meta.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>My Component</masterLabel>
+    <targets>
+        <target>lightning__FlowScreen</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__FlowScreen" configurationEditor="c-my-component-editor">
+            <!-- Declare the generic SObject type BEFORE any property that uses it. -->
+            <propertyType name="T" extends="SObject" label="Record Type" />
+
+            <property name="records" type="{T[]}" label="Records" role="inputOnly" />
+            <property name="objectApiName" type="String" label="Object API Name" role="inputOnly" />
+            <property name="displayField" type="String" label="Display Field" role="inputOnly" />
+            <property name="heading" type="String" label="Heading" role="inputOnly" />
+            <property name="pageSize" type="Integer" label="Page Size" role="inputOnly" />
+
+            <!-- Optional: Flow supplies its runtime API version, which the
+                 editor passes to pickers for versioned $Api globals. -->
+            <property
+                name="flowRuntimeApiVersion"
+                type="Double"
+                label="Flow Runtime API Version"
+                role="inputOnly"
+                flowRole="flowRuntimeApiVersion"
+            />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>
+```
+
+Rules that are easy to get wrong:
+
+- `configurationEditor` uses the **kebab-case element name** (`c-my-component-editor`), not the camelCase module name.
+- A generic SObject needs **both** a `<propertyType name="T" extends="SObject" label="..."/>` declaration and a property typed `{T}` (single) or `{T[]}` (collection). Declaring only the property will not deploy.
+- `<propertyType>` elements must come before the `<property>` elements that reference them.
+- The type letter is arbitrary but must match the `genericType` in your schema, or the `typeName` you pass to `setGenericType()`.
+- Use a **distinct** type name per independent collection (`TSingle`, `TMultiple`). Sharing one across unrelated collections couples them.
+- Every declared generic type **must** end up mapped, or the Flow cannot be activated.
+- Property types are Salesforce metadata types: `String`, `Integer`, `Double`, `Boolean`, `Date`, `DateTime`, `{T}`, `{T[]}`. There is no `Number` and no `Field` type. A schema `type: "Number"` maps to an `Integer` or `Double` property.
+- A field selection persists as a `String`; multiple fields persist as a JSON array inside a `String`.
+- `role="inputOnly"` on every property the editor writes; omit it only for genuine output properties.
+- The editor bundle needs `isExposed=false` and **no** `targets` or `targetConfigs`.
+
+---
+
+## 3. The editor — declarative form (default)
+
+```js
+import FlowConfigEditorBase from "c/flowConfigEditorBase";
+
+export default class MyComponentEditor extends FlowConfigEditorBase {
+  static flowProperties = {
+    records: {
+      type: "SObject",
+      collection: true,
+      genericType: "T",
+      objectProperty: "objectApiName",
+      required: true,
+      label: "Records"
+    },
+    displayField: { type: "field", dependsOn: "records", required: true },
+    heading: { type: "String" }
+  };
+}
+```
+
+That is the complete editor. **No `.html` file. No event handlers.** The base renders controls, hydrates saved values, keeps the generic mapping in step, clears dependent fields on object-type change, and implements `validate()`.
+
+The editor's `.js-meta.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>false</isExposed>
+</LightningComponentBundle>
+```
+
+### Schema keys
+
+| Key              | Applies to | Meaning                                                               |
+| ---------------- | ---------- | --------------------------------------------------------------------- |
+| `type`           | all        | `String`, `Number`, `SObject`, `field`. Default `String`.             |
+| `label`          | all        | Default is the humanized property name.                               |
+| `required`       | all        | Reports `"<label> is required."`                                      |
+| `helpText`       | all        | Help text beside the label.                                           |
+| `placeholder`    | all        | Empty-state text.                                                     |
+| `collection`     | `SObject`  | Restrict picker to collections.                                       |
+| `genericType`    | `SObject`  | Generic type name kept in step with the selection.                    |
+| `objectProperty` | `SObject`  | Optional String property mirroring the resolved object API name.      |
+| `allowManual`    | `SObject`  | Allow a hand-typed reference. Default `true`.                         |
+| `dependsOn`      | `field`    | Property supplying the object API name.                               |
+| `multiple`       | `field`    | Ordered multi-field selection, persisted as JSON.                     |
+| `acceptedTypes`  | `field`    | Comma-separated field types.                                          |
+
+Declaration order is render order.
+
+---
+
+## 4. The editor — imperative form (escape hatch)
+
+Use when the schema cannot express something: conditional requiredness, legacy property migration, cross-property rules, custom layout. Same base class — mix freely with a schema.
+
+```js
+import FlowConfigEditorBase from "c/flowConfigEditorBase";
+
+export default class MyComponentEditor extends FlowConfigEditorBase {
+  get heading() {
+    return this.input("heading");
+  }
+
+  get headingDataType() {
+    return this.inputDataType("heading", "String");
+  }
+
+  handleHeadingChange(event) {
+    this.clearErrors();
+  }
+
+  validateConfiguration() {
+    return this.heading ? [] : [{ key: "heading", errorString: "Heading is required." }];
+  }
+}
+```
+
+With its own `myComponentEditor.html`:
+
+```html
+<template>
+  <c-flow-config-value-input
+    data-validatable
+    data-property="heading"
+    label="Heading"
+    property-name="heading"
+    value={heading}
+    value-data-type={headingDataType}
+    builder-context={builderContext}
+    automatic-output-variables={automaticOutputVariables}
+    api-version={apiVersion}
+    onvaluechange={handleHeadingChange}
+  ></c-flow-config-value-input>
+</template>
+```
+
+### Inherited public API (do not redeclare)
+
+`builderContext`, `inputVariables`, `genericTypeMappings`, `automaticOutputVariables`, `elementInfo`, `validate()`.
+
+### Read
+
+| Call                                   | Returns                                                        |
+| -------------------------------------- | -------------------------------------------------------------- |
+| `this.input(name, fallback?, asRef?)`  | Saved value.                                                   |
+| `this.reference(name, fallback?)`      | Saved value as `{!Resource}`.                                  |
+| `this.inputVariable(name)`             | Raw variable including `valueDataType`.                        |
+| `this.inputDataType(name, fallback?)`  | Saved `valueDataType`.                                         |
+| `this.genericType(typeName, fallback?)`| Object API name bound to a generic mapping.                    |
+| `this.apiVersion`                      | Flow runtime API version.                                      |
+
+### Write
+
+| Call                                             | Effect                                        |
+| ------------------------------------------------ | --------------------------------------------- |
+| `this.setInput(name, value, dataType?)`          | Assign an input.                              |
+| `this.clearInput(name, dataType?)`               | Remove an input assignment.                   |
+| `this.setGenericType(typeName, typeValue)`       | Assign/clear a generic mapping.               |
+| `this.applyCollectionChange({...})`              | Move collection + mapping + mirror + dependent together. Returns the transition. |
+
+`applyCollectionChange` accepts `{ objectProperty, dependentProperty, typeName, newValue, objectType, currentObjectType, dependentValue, fallbackObjectType? }` and returns `{ changed, nextObjectType, clearDependent, showResetNotice }`.
+
+### Validate
+
+Override `validateConfiguration()` → `[{ key, errorString }]`. Also `setError(key, msg)`, `clearError(key)`, `clearErrors()`, `validationErrors`, `hasValidationErrors`.
+
+Mark each control `data-validatable data-property="<name>"` so inherited `validate()` mirrors messages onto it.
+
+### React to republished inputs
+
+Override `configurationChanged(source)`; `source` is `builderContext` | `inputVariables` | `genericTypeMappings` | `automaticOutputVariables`. Flow Builder publishes them in **no guaranteed order** — never assume one has arrived when handling another.
+
+---
+
+## 5. Pickers
+
+### `c-flow-config-value-input` — literal or resource scalar
+
+`label`, `property-name`, `value`, `value-data-type`, `value-type` (`String`|`Number`), `builder-context`, `automatic-output-variables`, `api-version`, `required`, `placeholder`, `field-level-help`.
+
+Event `valuechange` → `{ name, newValue, newValueDataType, resource }`.
+
+### `c-flow-config-resource-picker` — Flow resource browser
+
+Above, plus `accepted-types` (comma-separated; empty = all), `collection` (`any`|`only`|`exclude`), `allow-manual`, `allow-literal`, `allow-record-fields`, `literal-type`, `max-results`.
+
+Event `resourcechange` → `{ name, newValue, newValueDataType, resource }`.
+
+### `c-flow-config-field-picker` — SObject field selection
+
+`label`, `property-name`, `object-api-name`, `value`, `multiple`, `accepted-types`, `max-results`, `max-relationship-depth` (default 5), `required`, `placeholder`, `field-level-help`.
+
+Event `fieldchange` → `{ name, newValue, newValueDataType, field, selectedValues, selectedFields }`.
+
+All three expose `setCustomValidity(message)`, `reportValidity()`, `validationMessage`.
+
+---
+
+## 6. Value formats — get these exactly right
+
+| Kind                 | Stored as                              | `valueDataType` |
+| -------------------- | -------------------------------------- | --------------- |
+| Flow resource        | `{!MyVariable}` / `{!varAccount.Name}` | `reference`     |
+| Text literal         | `Some text`                            | `String`        |
+| Number literal       | `42.5` (a number, not a string)        | `Number`        |
+| Single field         | `Name` or `Account.Industry`           | `String`        |
+| Multiple fields      | `["Name","Email"]` (JSON in a String)  | `String`        |
+| Object API name      | `Account`                              | `String`        |
+
+- References always keep the `{!...}` wrapper. Never strip it before saving.
+- Clearing an input dispatches `configuration_editor_input_value_changed` with `newValue: null`. There is **no** `..._value_deleted` event; do not look for one.
+
+---
+
+## 7. Events on the wire
+
+The framework dispatches these for you. Listed so you recognize them in tests.
+
+```js
+// assign or clear an input
+new CustomEvent("configuration_editor_input_value_changed", {
+  bubbles: true, composed: true, cancelable: false,
+  detail: { name, newValue, newValueDataType }
+});
+
+// bind a generic SObject type
+new CustomEvent("configuration_editor_generic_type_mapping_changed", {
+  bubbles: true, composed: true, cancelable: false,
+  detail: { typeName, typeValue }
+});
+```
+
+`genericTypeMappings` entries use `{ typeName, typeValue }`. `inputVariables` entries use `{ name, value, valueDataType }`. These key names differ; mixing them up is the most common bug.
+
+---
+
+## 8. Recipes
+
+### Scalar input
+
+```js
+static flowProperties = { heading: { type: "String" } };
+```
+
+### Record collection driving a field picker
+
+```js
+static flowProperties = {
+  records: { type: "SObject", collection: true, genericType: "T",
+             objectProperty: "objectApiName", required: true },
+  displayField: { type: "field", dependsOn: "records", required: true }
+};
+```
+
+Component meta needs `<propertyType name="T" extends="SObject" label="Record Type"/>`, `type="{T[]}"` for `records`, plus `String` properties for `objectApiName` and `displayField`.
+
+### Ordered multi-field selection
+
+```js
+static flowProperties = {
+  records: { type: "SObject", collection: true, genericType: "T" },
+  columns: { type: "field", dependsOn: "records", multiple: true }
+};
+```
+
+`columns` persists as a JSON array string. Parse with `JSON.parse` in the screen component.
+
+### Two independent collections
+
+Declare two resources with **different** `genericType` names and point each field at its own `dependsOn`:
+
+```js
+static flowProperties = {
+  singleRecords: { type: "SObject", collection: true, genericType: "TSingle" },
+  singleField: { type: "field", dependsOn: "singleRecords" },
+  multipleRecords: { type: "SObject", collection: true, genericType: "TMultiple" },
+  columns: { type: "field", dependsOn: "multipleRecords", multiple: true }
+};
+```
+
+Component meta needs two `<propertyType>` declarations. Do not share one generic type between independent collections — it couples them, and clearing one will fight the other.
+
+### Custom rule on top of a schema
+
+```js
+export default class MyEditor extends FlowConfigEditorBase {
+  static flowProperties = { pageSize: { type: "Number" } };
+
+  validateConfiguration() {
+    const size = Number(this.input("pageSize"));
+    return size > 0 && size <= 200
+      ? []
+      : [{ key: "pageSize", errorString: "Page Size must be between 1 and 200." }];
+  }
+}
+```
+
+---
+
+## 9. Testing
+
+`sfdx-lwc-jest`. Only `@api` members are reachable on the element host; internal helpers are not.
+
+```js
+import { createElement } from "lwc";
+import MyEditor from "c/myComponentEditor";
+
+const element = createElement("c-my-component-editor", { is: MyEditor });
+element.builderContext = { variables: [
+  { name: "accountList", dataType: "SObject", objectType: "Account", isCollection: true }
+]};
+element.inputVariables = [
+  { name: "records", value: "accountList", valueDataType: "reference" }
+];
+document.body.appendChild(element);
+await Promise.resolve();
+
+expect(element.validate()).toEqual([]);
+```
+
+For a declarative editor, controls live inside the form's shadow root:
+
+```js
+element.shadowRoot
+  .querySelector("c-flow-config-editor-form")
+  .shadowRoot.querySelector('[data-property="records"]');
+```
+
+---
+
+## 10. Install and deploy
+
+```bash
+sf project deploy start --source-dir force-app --target-org my-org
+sf org assign permset --name Flow_Config_Editor_Access --target-org my-org
+```
+
+`Flow_Config_Editor_Access` grants the Apex controller and Visualforce bridge used for Apex-defined type and hierarchy-setting discovery. Apex source inspection additionally requires **Manage Flow**; without it the framework falls back to the Tooling API bridge, which enforces the user's own access.
+
+---
+
+## 11. Constraints an agent should respect
+
+- Never hard-code an org's objects, fields, Apex classes, subflows, or screen components. Discovery must come from `builderContext` or Salesforce metadata.
+- Treat `builderContext` as versioned external data. Tolerate missing arrays and alternate property names.
+- Clone arrays out of `builderContext` before iterating; Flow Builder reuses them across republishes.
+- Never log Flow values, session IDs, or metadata payloads.
+- Do not redeclare inherited `@api` properties on an editor.
+- Unsaved sibling screen-component outputs may not appear in `builderContext` yet. This is a platform limit, not a bug to work around.
+- Keep `apiVersion` identical across `sfdx-project.json`, every `-meta.xml`, both manifests, and the Visualforce bridge. `npm run check:api-version` enforces it.
+
+## 12. Verify your work
+
+```bash
+npm run verify
+```
+
+Runs API-version consistency, ESLint, Jest with coverage thresholds, and Prettier. All four must pass.

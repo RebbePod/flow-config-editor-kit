@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Flow Config Editor"
+  short_description: "Create a Flow custom property editor with this kit"
+  default_prompt: "Use $build-flow-config-editor to add a custom property editor for my Flow screen component."

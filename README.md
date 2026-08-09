@@ -115,9 +115,17 @@ npm run verify
 
 Use `npm run check:dependencies` during maintenance to report newer compatible npm releases. Dependabot also checks development dependencies weekly. Review major upgrades together with their Node and peer-dependency requirements; never update the lockfile without running the full verification suite.
 
-### AI contributors
+## Using this with an AI coding agent
 
-Repository-local instructions live in [`AGENTS.md`](AGENTS.md), with focused skills under [`.agents/skills`](.agents/skills):
+**Building an editor with the framework.** Point your agent at [`docs/llms.txt`](docs/llms.txt). It is a single self-contained reference — the full public API, exact event and value formats, the `targetConfig` XML, and copy-paste recipes — written so an agent needs no other file. The [`build-flow-config-editor`](.agents/skills/build-flow-config-editor/SKILL.md) skill wraps it with the decisions and failure modes that matter; copy that directory into a consuming project to use it there.
+
+```text
+Read docs/llms.txt from the Flow Config Editor Kit, then add a custom
+property editor for my Flow screen component with a record collection
+and a dependent field picker.
+```
+
+**Changing the framework itself.** Repository-local instructions live in [`AGENTS.md`](AGENTS.md), with focused skills under [`.agents/skills`](.agents/skills):
 
 - `extend-flow-config-kit` for framework features and architecture
 - `refine-flow-picker-ui` for picker UX and accessibility
@@ -140,6 +148,7 @@ These choices echo the useful base-pack model used by [UnofficialSF's Flow compo
 
 - [Getting started](docs/GETTING_STARTED.md)
 - [Component API](docs/COMPONENT_API.md)
+- [Single-file reference for coding agents](docs/llms.txt)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Adapting the framework](docs/ADAPTING.md)
 - [Security model](SECURITY.md)
