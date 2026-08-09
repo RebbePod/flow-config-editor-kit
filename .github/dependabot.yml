@@ -8,3 +8,18 @@ updates:
     groups:
       development-dependencies:
         dependency-type: development
+    ignore:
+      # Babel 8 is incompatible with the Salesforce LWC ESLint toolchain:
+      # @lwc/eslint-plugin-lwc v3 declares `peer @babel/eslint-parser@"^7"`,
+      # so npm ci fails with ERESOLVE. Remove this entry once that plugin
+      # supports Babel 8; do not work around it with --legacy-peer-deps.
+      - dependency-name: "@babel/core"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@babel/eslint-parser"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

@@ -1,0 +1,9 @@
+# Default owner for everything in this repository.
+*                       @RebbePod
+
+# Contracts that downstream projects depend on. Changes here are breaking
+# changes for adopters and warrant a closer look.
+/docs/COMPONENT_API.md  @RebbePod
+/docs/llms.txt          @RebbePod
+/.agents/               @RebbePod
+/SECURITY.md            @RebbePod

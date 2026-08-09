@@ -4,7 +4,7 @@
 
 - A Salesforce org with My Domain and Lightning Experience enabled
 - Salesforce CLI (`sf`)
-- Node.js 20 or later for local tests
+- Node.js 22 or later for local tests
 - Permission to deploy Apex, Lightning Web Components, Visualforce, and permission sets
 
 ## Install the framework
