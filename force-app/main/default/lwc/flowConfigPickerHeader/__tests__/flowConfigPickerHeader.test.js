@@ -55,4 +55,22 @@ describe("c-flow-config-picker-header", () => {
 
     expect(close).toHaveBeenCalledTimes(1);
   });
+
+  it("renders an accessible mode switch and dispatches its next state", () => {
+    const element = createElement("c-flow-config-picker-header", {
+      is: FlowConfigPickerHeader
+    });
+    element.items = ITEMS;
+    element.modeToggleLabel = "Custom value";
+    element.modeToggleChecked = false;
+    const modeToggle = jest.fn();
+    element.addEventListener("modetoggle", modeToggle);
+    document.body.appendChild(element);
+
+    const toggle = element.shadowRoot.querySelector('[role="switch"]');
+    expect(toggle.getAttribute("aria-checked")).toBe("false");
+    toggle.click();
+
+    expect(modeToggle.mock.calls[0][0].detail).toEqual({ checked: true });
+  });
 });

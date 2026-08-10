@@ -12,6 +12,8 @@ export default class FlowConfigValueInput extends LightningElement {
   @api valueDataType;
   @api automaticOutputVariables = {};
   @api apiVersion;
+  @api modeToggleLabel;
+  @api modeToggleChecked = false;
   customValidityMessage = "";
 
   get acceptedTypes() {
@@ -48,5 +50,10 @@ export default class FlowConfigValueInput extends LightningElement {
     const picker = this.template.querySelector("c-flow-config-resource-picker");
     picker?.setCustomValidity(this.customValidityMessage);
     return picker?.reportValidity() ?? !this.customValidityMessage;
+  }
+
+  @api
+  openPicker() {
+    this.template.querySelector("c-flow-config-resource-picker")?.openPicker();
   }
 }

@@ -22,6 +22,9 @@ export default class FlowConfigEditorForm extends LightningElement {
       value: this.values?.[descriptor.name] ?? null,
       dataType: this.valueDataTypes?.[descriptor.name] || null,
       objectApiName: this.objectTypes?.[descriptor.name] || null,
+      customMode: descriptor.customModeProperty
+        ? Boolean(this.values?.[descriptor.customModeProperty])
+        : false,
       collectionMode: descriptor.collection ? "only" : "any"
     }));
   }
@@ -38,6 +41,33 @@ export default class FlowConfigEditorForm extends LightningElement {
     this.emit(event, {
       selectedValues: event.detail?.selectedValues || null
     });
+  }
+
+  handleFieldInputChange(event) {
+    this.emit(event, {
+      selectedValues: event.detail?.selectedValues || null,
+      customMode: Boolean(event.detail?.customMode)
+    });
+  }
+
+  handleFieldModeChange(event) {
+    const descriptor = (this.schema || []).find(
+      (entry) => entry.name === event.currentTarget?.dataset?.property
+    );
+    if (!descriptor?.customModeProperty) {
+      return;
+    }
+    event.stopPropagation();
+    this.dispatchEvent(
+      new CustomEvent("configchange", {
+        detail: {
+          name: descriptor.customModeProperty,
+          newValue: Boolean(event.detail?.customMode),
+          newValueDataType: "Boolean",
+          modeFor: descriptor.name
+        }
+      })
+    );
   }
 
   emit(event, extra = {}) {

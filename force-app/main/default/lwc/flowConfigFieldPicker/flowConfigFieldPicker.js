@@ -34,10 +34,13 @@ export default class FlowConfigFieldPicker extends LightningElement {
   @api acceptedTypes = "";
   @api maxResults = 100;
   @api maxRelationshipDepth = 5;
+  @api modeToggleLabel;
+  @api modeToggleChecked = false;
 
   _value = null;
   _values = [];
   _multiple = false;
+  _sortable = true;
   objectInfoCache = {};
   objectInfoError;
   browseStack = [];
@@ -83,6 +86,14 @@ export default class FlowConfigFieldPicker extends LightningElement {
   set multiple(value) {
     this._multiple = value === true || value === "true";
     this.setInternalValue(this._value);
+  }
+
+  @api
+  get sortable() {
+    return this._sortable;
+  }
+  set sortable(value) {
+    this._sortable = value !== false && value !== "false";
   }
 
   @api
@@ -365,8 +376,12 @@ export default class FlowConfigFieldPicker extends LightningElement {
     }
   }
 
-  get showOrdering() {
+  get showSelectedFields() {
     return this._multiple && this.hasValue;
+  }
+
+  get showOrderingControls() {
+    return this._sortable;
   }
 
   get orderedFields() {
@@ -455,6 +470,10 @@ export default class FlowConfigFieldPicker extends LightningElement {
     return buildPickerBreadcrumbs("All Fields", this.browseStack);
   }
 
+  get effectiveModeToggleLabel() {
+    return this.browseStack.length ? null : this.modeToggleLabel;
+  }
+
   get hasRelationships() {
     return this.relationshipFields.length > 0;
   }
@@ -501,6 +520,14 @@ export default class FlowConfigFieldPicker extends LightningElement {
     ) {
       this.query = "";
     }
+  }
+
+  @api
+  openPicker() {
+    this.handleFocus();
+    Promise.resolve().then(() => {
+      this.template.querySelector("lightning-input")?.focus();
+    });
   }
 
   handleSearch(event) {

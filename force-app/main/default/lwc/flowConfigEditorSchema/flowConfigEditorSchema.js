@@ -54,6 +54,12 @@ export function normalizeSchema(properties) {
         // flag only means anything for a resource.
         collection: !isField && definition.collection === true,
         multiple: isField && definition.multiple === true,
+        sortable: !isField || definition.sortable !== false,
+        allowCustom: isField && definition.allowCustom === true,
+        customModeProperty:
+          isField && definition.allowCustom
+            ? definition.customModeProperty || null
+            : null,
         acceptedTypes: definition.acceptedTypes || "",
         placeholder: definition.placeholder || null,
         allowManual: definition.allowManual !== false,

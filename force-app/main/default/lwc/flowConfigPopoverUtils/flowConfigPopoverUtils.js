@@ -100,17 +100,26 @@ export function positionAnchoredPopover({
 
   const settings = { ...DEFAULT_OPTIONS, ...options };
   const headerHeight = Math.ceil(measuredHeight(header));
+  const actionsHeight = Math.ceil(measuredHeight(actions));
   const naturalHeight = Math.ceil(
-    headerHeight + (scrollArea?.scrollHeight || 0) + measuredHeight(actions) + 2
+    headerHeight + (scrollArea?.scrollHeight || 0) + actionsHeight + 2
   );
   const dynamicMaximum = Math.min(
     settings.maximumHeight,
     settings.compactMaximumHeight +
       Math.max(0, headerHeight - settings.compactHeaderHeight)
   );
+  // Optional panels such as multi-select's selected-field summary sit above
+  // the normal results scroller. Add their rendered height to the popover's
+  // budget so they do not consume the browsing area when viewport space is
+  // available. The final viewport clamp below still handles constrained screens.
+  const expandedMaximum = dynamicMaximum + actionsHeight;
   const desiredHeight = Math.min(
-    dynamicMaximum,
-    Math.max(settings.minimumHeight, naturalHeight || dynamicMaximum)
+    expandedMaximum,
+    Math.max(
+      settings.minimumHeight + actionsHeight,
+      naturalHeight || expandedMaximum
+    )
   );
   const spaceBelow =
     viewportHeight - anchorRect.bottom - settings.viewportMargin;
