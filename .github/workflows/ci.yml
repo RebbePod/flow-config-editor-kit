@@ -8,14 +8,103 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
+    name: Lint, test, format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20.19.0
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run verify
+
+  analyze:
+    name: Salesforce Code Analyzer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm install --global @salesforce/cli
+      - run: sf plugins install code-analyzer
+      # Gates on Critical and High only. Moderate findings are tracked in
+      # code-analyzer.yml and are not blocking yet.
+      - name: Analyze core and examples
+        run: |
+          sf code-analyzer run \
+            --workspace force-app \
+            --workspace examples \
+            --rule-selector Recommended \
+            --severity-threshold 2
+
+  # Proves what the docs claim: core deploys and its Apex passes on a real org,
+  # independently of the examples package. Skipped automatically on forks and
+  # wherever the Dev Hub secret is absent.
+  org:
+    name: Scratch org validation
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check for Dev Hub credentials
+        id: creds
+        env:
+          DEVHUB_SFDX_URL: ${{ secrets.DEVHUB_SFDX_URL }}
+        run: |
+          if [ -n "$DEVHUB_SFDX_URL" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::DEVHUB_SFDX_URL is not set; skipping org validation."
+          fi
+
+      - uses: actions/setup-node@v5
+        if: steps.creds.outputs.available == 'true'
+        with:
+          node-version: 22
+
+      - name: Install Salesforce CLI
+        if: steps.creds.outputs.available == 'true'
+        run: npm install --global @salesforce/cli
+
+      - name: Authenticate Dev Hub
+        if: steps.creds.outputs.available == 'true'
+        env:
+          DEVHUB_SFDX_URL: ${{ secrets.DEVHUB_SFDX_URL }}
+        run: |
+          printf '%s' "$DEVHUB_SFDX_URL" > devhub.txt
+          sf org login sfdx-url --sfdx-url-file devhub.txt --alias devhub --set-default-dev-hub
+          rm -f devhub.txt
+
+      - name: Create scratch org
+        if: steps.creds.outputs.available == 'true'
+        run: |
+          sf org create scratch \
+            --definition-file config/project-scratch-def.json \
+            --alias ci --target-dev-hub devhub \
+            --duration-days 1 --wait 20 --no-track-source
+
+      - name: Validate core with Apex tests
+        if: steps.creds.outputs.available == 'true'
+        run: |
+          sf project deploy validate --source-dir force-app \
+            --target-org ci --test-level RunLocalTests --wait 30
+
+      - name: Validate examples against deployed core
+        if: steps.creds.outputs.available == 'true'
+        run: |
+          sf project deploy start --source-dir force-app --target-org ci --wait 30
+          sf project deploy validate --source-dir examples --target-org ci --wait 30
+
+      - name: Delete scratch org
+        if: always() && steps.creds.outputs.available == 'true'
+        run: sf org delete scratch --target-org ci --no-prompt || true

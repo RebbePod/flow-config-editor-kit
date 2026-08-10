@@ -111,7 +111,9 @@ npm ci
 npm run verify
 ```
 
-`verify` checks API-version consistency, then runs ESLint, all LWC Jest suites, coverage thresholds, and Prettier. The repository currently targets Salesforce API version 67.0.
+`verify` checks API-version consistency, then runs ESLint, all LWC Jest suites, coverage thresholds, and Prettier. The repository currently targets Salesforce API version 67.0 and Node 22.
+
+CI additionally runs Salesforce Code Analyzer, gating on Critical and High violations, and — when a `DEVHUB_SFDX_URL` secret is configured — validates that `force-app` deploys and passes its Apex tests on a scratch org independently of `examples`.
 
 Use `npm run check:dependencies` during maintenance to report newer compatible npm releases. Dependabot also checks development dependencies weekly. Review major upgrades together with their Node and peer-dependency requirements; never update the lockfile without running the full verification suite.
 

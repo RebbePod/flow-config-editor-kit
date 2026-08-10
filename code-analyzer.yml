@@ -1,0 +1,10 @@
+# Salesforce Code Analyzer configuration.
+#
+# CI gates on Critical and High violations. Moderate findings (notably the
+# controller's cognitive complexity and SLDS 2 styling hooks) are tracked but
+# not yet blocking; tighten the threshold once they are addressed.
+engines:
+  flow:
+    # This repository contains no Flow metadata — it is a framework for building
+    # Flow custom property editors. The engine only adds a Python dependency.
+    disable_engine: true

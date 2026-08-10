@@ -32,8 +32,12 @@ public with sharing class FlowConfigApexTypeController {
     }
     Schema.SObjectType resolved;
     try {
+      // DEFERRED keeps child relationships unloaded. Only the type and its
+      // fields are ever read here, and loading relationships for every
+      // candidate is a large amount of wasted describe work.
       List<Schema.DescribeSObjectResult> described = Schema.describeSObjects(
-        new List<String>{ candidate }
+        new List<String>{ candidate },
+        SObjectDescribeOptions.DEFERRED
       );
       resolved = described.isEmpty() ? null : described[0].getSObjectType();
     } catch (Exception ignored) {
@@ -65,6 +69,7 @@ public with sharing class FlowConfigApexTypeController {
             WHERE
               AssigneeId = :UserInfo.getUserId()
               AND PermissionSet.PermissionsManageInteraction = TRUE
+            WITH USER_MODE
             LIMIT 1
           ]
           .isEmpty();
@@ -150,11 +155,23 @@ public with sharing class FlowConfigApexTypeController {
     }
 
     ClassIdentity identity = parseClassIdentity(apexClassName);
-    List<ApexClass> candidates = [
-      SELECT Name, NamespacePrefix, Body
-      FROM ApexClass
-      WHERE Name = :identity.className
-    ];
+    List<ApexClass> candidates;
+    try {
+      // USER_MODE enforces the running user's own access to Apex source on top
+      // of the Manage Flow check above, so this class never lends its system
+      // mode to a caller. A user who cannot read ApexClass falls through to the
+      // Tooling bridge, which is subject to the same access.
+      candidates = [
+        SELECT Name, NamespacePrefix, Body
+        FROM ApexClass
+        WHERE Name = :identity.className
+        WITH USER_MODE
+      ];
+    } catch (Exception ignored) {
+      throw new AuraHandledException(
+        'Unable to read Apex source for "' + apexClassName + '".'
+      );
+    }
     for (ApexClass candidate : candidates) {
       if (
         candidate.NamespacePrefix == identity.namespacePrefix ||
@@ -277,7 +294,8 @@ public with sharing class FlowConfigApexTypeController {
       }
       for (
         Schema.DescribeSObjectResult objectDescribe : Schema.describeSObjects(
-          chunk
+          chunk,
+          SObjectDescribeOptions.DEFERRED
         )
       ) {
         HierarchySettingDescriptor setting = toHierarchySetting(objectDescribe);

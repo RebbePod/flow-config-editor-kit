@@ -6,7 +6,7 @@ AI-assisted contributions must follow [`AGENTS.md`](AGENTS.md) and the relevant 
 
 ## Local setup
 
-1. Install a current Salesforce CLI and Node.js 20 or later.
+1. Install a current Salesforce CLI and Node.js 22 or later.
 2. Run `npm ci`.
 3. Authenticate a development org with `sf org login web --alias flow-config-dev`.
 4. Deploy `force-app`, then optionally deploy `examples`.
