@@ -65,6 +65,8 @@ export default class FlowConfigResourcePicker extends LightningElement {
   @api allowRecordFields = false;
   @api literalType = "String";
   @api maxResults = 100;
+  @api modeToggleLabel;
+  @api modeToggleChecked = false;
 
   _builderContext = {};
   _value = null;
@@ -1450,6 +1452,10 @@ export default class FlowConfigResourcePicker extends LightningElement {
     return buildPickerBreadcrumbs("All Resources", this.browseStack);
   }
 
+  get effectiveModeToggleLabel() {
+    return this.browseStack.length ? null : this.modeToggleLabel;
+  }
+
   get inputDisplayValue() {
     if (!this.query && this.isBrowsingRecord) {
       return `{!${this.currentBrowseNode.path}.}`;
@@ -1548,6 +1554,12 @@ export default class FlowConfigResourcePicker extends LightningElement {
     this.isOpen = true;
     this.isEditing = true;
     this.activeIndex = -1;
+  }
+
+  @api
+  openPicker() {
+    this.handleFocus();
+    this.focusSearchAfterRender();
   }
 
   requestAutomaticOutputRefresh() {

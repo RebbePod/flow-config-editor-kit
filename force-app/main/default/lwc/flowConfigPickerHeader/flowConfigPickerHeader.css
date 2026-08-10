@@ -26,8 +26,59 @@
   row-gap: 0.1rem;
 }
 
-lightning-button-icon {
+.header__actions {
+  align-items: center;
+  display: flex;
   flex: 0 0 auto;
+  gap: 0.35rem;
+}
+
+.mode-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: #181818;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 400;
+  gap: 0.35rem;
+  min-height: 1.625rem;
+  padding: 0 0.15rem;
+}
+
+.mode-toggle:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid #0b5cab;
+  outline-offset: 1px;
+}
+
+.mode-toggle__track {
+  background: #706e6b;
+  border-radius: 1rem;
+  display: inline-flex;
+  height: 0.875rem;
+  padding: 0.125rem;
+  transition: background 120ms ease;
+  width: 1.625rem;
+}
+
+.mode-toggle__track--checked {
+  background: #0176d3;
+}
+
+.mode-toggle__thumb {
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 30%);
+  height: 0.625rem;
+  transform: translateX(0);
+  transition: transform 120ms ease;
+  width: 0.625rem;
+}
+
+.mode-toggle__track--checked .mode-toggle__thumb {
+  transform: translateX(0.75rem);
 }
 
 .breadcrumb-item {

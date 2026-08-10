@@ -22,13 +22,29 @@
         </span>
       </template>
     </nav>
-    <lightning-button-icon
-      icon-name="utility:close"
-      alternative-text={closeLabel}
-      title={closeLabel}
-      variant="bare"
-      size="small"
-      onclick={handleClose}
-    ></lightning-button-icon>
+    <div class="header__actions">
+      <template lwc:if={showModeToggle}>
+        <button
+          class="mode-toggle"
+          type="button"
+          role="switch"
+          aria-checked={modeToggleChecked}
+          onclick={handleModeToggle}
+        >
+          <span>{modeToggleLabel}</span>
+          <span class={modeToggleTrackClass} aria-hidden="true">
+            <span class="mode-toggle__thumb"></span>
+          </span>
+        </button>
+      </template>
+      <lightning-button-icon
+        icon-name="utility:close"
+        alternative-text={closeLabel}
+        title={closeLabel}
+        variant="bare"
+        size="small"
+        onclick={handleClose}
+      ></lightning-button-icon>
+    </div>
   </header>
 </template>

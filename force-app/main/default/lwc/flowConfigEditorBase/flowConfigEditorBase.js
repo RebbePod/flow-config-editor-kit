@@ -176,6 +176,12 @@ export default class FlowConfigEditorBase extends LightningElement {
         descriptor.name,
         descriptor.isResource ? "reference" : descriptor.type
       );
+      if (descriptor.customModeProperty) {
+        const explicitMode = this.inputVariable(descriptor.customModeProperty);
+        values[descriptor.customModeProperty] = explicitMode
+          ? Boolean(this.input(descriptor.customModeProperty, false))
+          : dataTypes[descriptor.name] === "reference";
+      }
       if (descriptor.isResource) {
         objectTypes[descriptor.name] = objectTypeFor(descriptor, readers);
       }
@@ -205,6 +211,13 @@ export default class FlowConfigEditorBase extends LightningElement {
     const { name, newValue, newValueDataType, resource } = event.detail;
     const descriptor = this.schema.find((entry) => entry.name === name);
     if (!descriptor) {
+      const modeDescriptor = this.schema.find(
+        (entry) => entry.customModeProperty === name
+      );
+      if (modeDescriptor) {
+        this.schemaValues = { ...this.schemaValues, [name]: Boolean(newValue) };
+        this.setInput(name, Boolean(newValue), "Boolean");
+      }
       return;
     }
     this.clearError(name);

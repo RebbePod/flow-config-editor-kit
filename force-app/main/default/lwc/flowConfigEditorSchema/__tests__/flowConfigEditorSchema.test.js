@@ -68,6 +68,22 @@ describe("c-flow-config-editor-schema", () => {
       expect(field.dependsOn).toBe("records");
     });
 
+    it("normalizes optional field-or-custom mode configuration", () => {
+      const [field, strict] = normalizeSchema({
+        sortBy: {
+          type: "field",
+          allowCustom: true,
+          customModeProperty: "sortByIsCustom"
+        },
+        displayField: { type: "field" }
+      });
+
+      expect(field.allowCustom).toBe(true);
+      expect(field.customModeProperty).toBe("sortByIsCustom");
+      expect(strict.allowCustom).toBe(false);
+      expect(strict.customModeProperty).toBeNull();
+    });
+
     it("ignores collection on a field and multiple on a resource", () => {
       const [resource, field] = normalizeSchema({
         records: { type: "SObject", multiple: true },

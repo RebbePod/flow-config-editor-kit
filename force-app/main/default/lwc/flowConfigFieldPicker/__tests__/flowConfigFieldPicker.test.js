@@ -272,6 +272,52 @@ describe("c-flow-config-field-picker", () => {
     });
   });
 
+  it("supports unordered multiple selection without reorder controls", async () => {
+    const element = createElement("c-flow-config-field-picker", {
+      is: FlowConfigFieldPicker
+    });
+    element.objectApiName = "Account";
+    element.propertyName = "displayFieldsJson";
+    element.multiple = true;
+    element.sortable = false;
+    element.value = '["Name","AnnualRevenue"]';
+    const handler = jest.fn();
+    element.addEventListener(
+      "configuration_editor_input_value_changed",
+      handler
+    );
+    document.body.appendChild(element);
+    getObjectInfo.emit(ACCOUNT_OBJECT_INFO);
+    await Promise.resolve();
+
+    element.shadowRoot.querySelector(".selection").click();
+    await Promise.resolve();
+
+    const selectedFields = element.shadowRoot.querySelector(".selected-fields");
+    expect(selectedFields).not.toBeNull();
+    expect(selectedFields.querySelectorAll(".selected-field")).toHaveLength(2);
+    expect(selectedFields.querySelector(".drag-handle")).toBeNull();
+    expect(selectedFields.querySelector('[title="Move field up"]')).toBeNull();
+    expect(
+      selectedFields.querySelector('[title="Move field down"]')
+    ).toBeNull();
+    expect(
+      selectedFields.querySelectorAll('[title="Remove field"]')
+    ).toHaveLength(2);
+    expect(
+      [...element.shadowRoot.querySelectorAll("button.result")].filter(
+        (button) => button.getAttribute("aria-selected") === "true"
+      )
+    ).toHaveLength(2);
+
+    selectedFields.querySelector('[title="Remove field"]').click();
+    expect(handler.mock.calls[0][0].detail).toEqual({
+      name: "displayFieldsJson",
+      newValue: '["AnnualRevenue"]',
+      newValueDataType: "String"
+    });
+  });
+
   it("reorders selected fields with compact arrow buttons", async () => {
     const element = createElement("c-flow-config-field-picker", {
       is: FlowConfigFieldPicker
@@ -475,6 +521,42 @@ describe("c-flow-config-field-picker", () => {
       newValue: "Account.Owner.Name",
       newValueDataType: "String"
     });
+  });
+
+  it("shows the mode switch only at the field root", async () => {
+    const element = createElement("c-flow-config-field-picker", {
+      is: FlowConfigFieldPicker
+    });
+    element.objectApiName = "Opportunity";
+    element.modeToggleLabel = "Custom value";
+    document.body.appendChild(element);
+    getObjectInfo.emit(OPPORTUNITY_OBJECT_INFO);
+    await Promise.resolve();
+
+    element.openPicker();
+    await Promise.resolve();
+    let header = element.shadowRoot.querySelector(
+      "c-flow-config-picker-header"
+    );
+    expect(header.modeToggleLabel).toBe("Custom value");
+
+    element.shadowRoot.querySelector('[data-path="Account"]').click();
+    await Promise.resolve();
+    header = element.shadowRoot.querySelector("c-flow-config-picker-header");
+    expect(header.modeToggleLabel).toBeNull();
+
+    header.dispatchEvent(
+      new CustomEvent("navigate", {
+        bubbles: true,
+        composed: true,
+        detail: { depth: 0 }
+      })
+    );
+    await Promise.resolve();
+    expect(
+      element.shadowRoot.querySelector("c-flow-config-picker-header")
+        .modeToggleLabel
+    ).toBe("Custom value");
   });
 
   it("keeps nested field paths ordered in multiple mode", async () => {

@@ -11,7 +11,10 @@ Consuming custom property editor (examples/...Editor)
   │      └─ inputs, configuration events, generic types, validate()
   ├─ flowConfigValueInput
   │    └─ flowConfigResourcePicker
-  └─ flowConfigFieldPicker
+  ├─ flowConfigFieldPicker
+  └─ flowConfigFieldInput
+       ├─ flowConfigFieldPicker
+       └─ flowConfigValueInput
        │
        ├─ shared model, event, interaction, icon, header, and popover modules
        └─ cached metadata services
@@ -30,7 +33,7 @@ It offers two levels. The imperative methods are the real API and carry no assum
 
 ### Presentation
 
-`flowConfigResourcePicker`, `flowConfigFieldPicker`, and `flowConfigPickerHeader` render the UI and manage local navigation. `flowConfigValueInput` provides a deliberately small wrapper for the common literal-or-resource pattern.
+`flowConfigResourcePicker`, `flowConfigFieldPicker`, and `flowConfigPickerHeader` render the UI and manage local navigation. `flowConfigValueInput` provides a deliberately small wrapper for the common literal-or-resource pattern. `flowConfigFieldInput` composes the field and value inputs when a consumer deliberately offers both a schema-backed field choice and a custom literal/resource mode.
 
 ### Domain/model
 

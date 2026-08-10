@@ -11,6 +11,7 @@
         <members>flowConfigEditorSchema</members>
         <members>flowConfigEditorUtils</members>
         <members>flowConfigFieldPicker</members>
+        <members>flowConfigFieldInput</members>
         <members>flowConfigGenericTypeCoordinator</members>
         <members>flowConfigMetadataService</members>
         <members>flowConfigPickerHeader</members>

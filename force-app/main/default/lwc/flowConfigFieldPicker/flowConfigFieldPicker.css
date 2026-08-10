@@ -155,6 +155,7 @@
 .selected-fields {
   background: #fafaf9;
   border-bottom: 1px solid #c9c9c9;
+  flex: 0 0 auto;
 }
 
 .selected-fields__heading {

@@ -667,6 +667,7 @@ describe("c-flow-config-resource-picker", () => {
       is: FlowConfigResourcePicker
     });
     element.allowRecordFields = true;
+    element.modeToggleLabel = "Custom value";
     element.builderContext = {
       variables: [
         { name: "CurrentContact", dataType: "SObject", objectType: "Contact" }
@@ -676,6 +677,10 @@ describe("c-flow-config-resource-picker", () => {
     const input = element.shadowRoot.querySelector("lightning-input");
     input.dispatchEvent(new CustomEvent("focus"));
     await flushPromises();
+    expect(
+      element.shadowRoot.querySelector("c-flow-config-picker-header")
+        .modeToggleLabel
+    ).toBe("Custom value");
     element.shadowRoot
       .querySelector('button[data-key="{!CurrentContact}"]')
       .click();
@@ -687,6 +692,10 @@ describe("c-flow-config-resource-picker", () => {
       }
     });
     await flushPromises();
+    expect(
+      element.shadowRoot.querySelector("c-flow-config-picker-header")
+        .modeToggleLabel
+    ).toBeNull();
 
     input.dispatchEvent(
       new CustomEvent("input", {
@@ -700,6 +709,21 @@ describe("c-flow-config-resource-picker", () => {
 
     expect(labels).toEqual(["Full Name"]);
     expect(element.shadowRoot.querySelector("button.manual")).toBeNull();
+
+    element.shadowRoot
+      .querySelector("c-flow-config-picker-header")
+      .dispatchEvent(
+        new CustomEvent("navigate", {
+          bubbles: true,
+          composed: true,
+          detail: { depth: 0 }
+        })
+      );
+    await flushPromises();
+    expect(
+      element.shadowRoot.querySelector("c-flow-config-picker-header")
+        .modeToggleLabel
+    ).toBe("Custom value");
   });
 
   it("browses from a screen into a custom component output", async () => {
