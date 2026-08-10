@@ -1,0 +1,106 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, verify, and promote a package version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run verify
+
+      - name: Require Dev Hub credentials
+        env:
+          DEVHUB_SFDX_URL: ${{ secrets.DEVHUB_SFDX_URL }}
+        run: |
+          if [ -z "$DEVHUB_SFDX_URL" ]; then
+            echo "::error::DEVHUB_SFDX_URL is not set. See docs/PACKAGING.md."
+            exit 1
+          fi
+
+      - name: Install Salesforce CLI
+        run: npm install --global @salesforce/cli
+
+      - name: Authenticate Dev Hub
+        env:
+          DEVHUB_SFDX_URL: ${{ secrets.DEVHUB_SFDX_URL }}
+        run: |
+          printf '%s' "$DEVHUB_SFDX_URL" > devhub.txt
+          sf org login sfdx-url --sfdx-url-file devhub.txt --alias devhub --set-default-dev-hub
+          rm -f devhub.txt
+
+      - name: Create package version
+        id: version
+        run: |
+          sf package version create \
+            --package "Flow Config Editor Kit" \
+            --installation-key-bypass \
+            --code-coverage \
+            --wait 90 \
+            --target-dev-hub devhub \
+            --json > version.json
+          SUBSCRIBER_ID=$(node -p "require('./version.json').result.SubscriberPackageVersionId")
+          echo "subscriber-id=$SUBSCRIBER_ID" >> "$GITHUB_OUTPUT"
+          echo "Created $SUBSCRIBER_ID"
+
+      # Promotion is irreversible, so prove the version actually installs first.
+      - name: Install into a fresh scratch org
+        run: |
+          sf org create scratch \
+            --definition-file config/project-scratch-def.json \
+            --alias release-check --target-dev-hub devhub \
+            --duration-days 1 --wait 20 --no-track-source
+          sf package install \
+            --package "${{ steps.version.outputs.subscriber-id }}" \
+            --target-org release-check --wait 20 --no-prompt
+          sf org assign permset --name Flow_Config_Editor_Access --target-org release-check
+
+      - name: Delete scratch org
+        if: always()
+        run: sf org delete scratch --target-org release-check --no-prompt || true
+
+      - name: Promote package version
+        run: |
+          sf package version promote \
+            --package "${{ steps.version.outputs.subscriber-id }}" \
+            --target-dev-hub devhub --no-prompt
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUBSCRIBER_ID: ${{ steps.version.outputs.subscriber-id }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          {
+            echo "## Install"
+            echo
+            echo "| Target | Link |"
+            echo "| --- | --- |"
+            echo "| Production / Developer | https://login.salesforce.com/packaging/installPackage.apexp?p0=$SUBSCRIBER_ID |"
+            echo "| Sandbox | https://test.salesforce.com/packaging/installPackage.apexp?p0=$SUBSCRIBER_ID |"
+            echo
+            echo "After installing, assign the permission set:"
+            echo
+            echo '```bash'
+            echo "sf org assign permset --name Flow_Config_Editor_Access --target-org my-org"
+            echo '```'
+            echo
+            echo "Package version id: \`$SUBSCRIBER_ID\`"
+          } > release-notes.md
+
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --generate-notes \
+            --notes-file release-notes.md

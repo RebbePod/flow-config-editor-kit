@@ -19,6 +19,8 @@ All notable changes will be documented here. This project follows semantic versi
 
 ### Changed
 
+- The framework is now built as a no-namespace unlocked package, with a tagged release workflow that verifies a version installs into a scratch org before promoting it.
+
 - The example editor now extends `flowConfigEditorBase`, dropping a third of its code with no behavior change.
 - Updated the Salesforce metadata and Tooling API baseline to API 67.0.
 

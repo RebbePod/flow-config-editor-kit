@@ -2,7 +2,11 @@
   "packageDirectories": [
     {
       "path": "force-app",
-      "default": true
+      "default": true,
+      "package": "Flow Config Editor Kit",
+      "versionName": "Version 0.1",
+      "versionNumber": "0.1.0.NEXT",
+      "versionDescription": "Reusable Flow resource and field pickers, plus an editor base class for Salesforce Flow custom property editors."
     },
     {
       "path": "examples",
@@ -12,5 +16,6 @@
   "name": "flow-config-editor-kit",
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "67.0"
+  "sourceApiVersion": "67.0",
+  "packageAliases": {}
 }

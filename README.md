@@ -25,7 +25,18 @@ This project packages that behavior into reusable components so each custom LWC 
 
 The core source lives in `force-app`. A complete consuming Flow screen component and custom property editor live separately in `examples` and are not part of a core deployment.
 
-## Quick start
+## Install
+
+The framework ships as a no-namespace unlocked package, so components keep their `c/` references in consuming code.
+
+```bash
+sf package install --package <04t...> --target-org my-org --wait 20
+sf org assign permset --name Flow_Config_Editor_Access --target-org my-org
+```
+
+Install URLs are published on each [release](../../releases). See [Packaging](docs/PACKAGING.md) to build your own version.
+
+To work from source instead:
 
 ```bash
 git clone <your-repository-url>
@@ -153,6 +164,7 @@ These choices echo the useful base-pack model used by [UnofficialSF's Flow compo
 - [Single-file reference for coding agents](docs/llms.txt)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Adapting the framework](docs/ADAPTING.md)
+- [Packaging and releases](docs/PACKAGING.md)
 - [Security model](SECURITY.md)
 - [Known platform boundaries](docs/LIMITATIONS.md)
 - [Contributing](CONTRIBUTING.md)
