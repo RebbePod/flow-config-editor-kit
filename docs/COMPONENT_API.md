@@ -126,6 +126,10 @@ Number literals must parse completely as finite numbers. Partially numeric text 
 
 Reopening a committed literal does not request a state-neutral Flow configuration refresh, so the input and resource popover remain immediately editable. Empty inputs and committed resource references still request refreshed automatic outputs when opened.
 
+Opening is progressive: the positioned popover shell renders first with a loading state, then root resource discovery and filtering begin after that initial paint. Nested metadata loading continues inside the already-visible popover.
+
+Resource searches include screen fields plus automatic action, Apex action, and subflow outputs. A container is shown only when its own label matches; when only a nested output matches, that output is shown directly with its parent path. Unmatched screen and automatic-output trees are skipped before they are built.
+
 ## `c-flow-config-resource-picker`
 
 The lower-level Flow resource browser.

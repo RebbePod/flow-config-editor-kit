@@ -23,7 +23,18 @@ jest.mock(
 );
 
 describe("c-flow-config-framework-example-editor", () => {
+  beforeEach(() => {
+    jest
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => {
+        callback(0);
+        return 1;
+      });
+    jest.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+  });
+
   afterEach(() => {
+    jest.restoreAllMocks();
     while (document.body.firstChild) {
       document.body.removeChild(document.body.firstChild);
     }

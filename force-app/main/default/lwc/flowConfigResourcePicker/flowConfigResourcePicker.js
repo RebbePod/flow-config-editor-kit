@@ -107,6 +107,8 @@ export default class FlowConfigResourcePicker extends LightningElement {
   automaticOutputRefreshRequested = false;
   dynamicGlobalCache = {};
   hierarchyPrefetchPromise = null;
+  rootResultsReady = true;
+  rootResultsFrame = null;
 
   constructor() {
     super();
@@ -505,9 +507,24 @@ export default class FlowConfigResourcePicker extends LightningElement {
     const query = this.filterQuery.toLowerCase();
     const options = [];
     (this._builderContext.screens || []).forEach((screen, index) => {
+      const label = screen.label || screen.name || `Screen ${index + 1}`;
+      const screenMatches = `${label} ${screen.name || ""}`
+        .toLowerCase()
+        .includes(query);
+      const queryRoot = query.split(".")[0];
+      const fieldSearchText = query
+        ? JSON.stringify(screen.fields || []).toLowerCase()
+        : "";
+      const fieldsMayMatch =
+        !query ||
+        fieldSearchText.includes(query) ||
+        (query.includes(".") && fieldSearchText.includes(queryRoot));
+      if (query && !screenMatches && !fieldsMayMatch) {
+        return;
+      }
       const screenNode = {
         key: `screen-${screen.name || index}`,
-        label: screen.label || screen.name || `Screen ${index + 1}`,
+        label,
         name: screen.name,
         path: screen.name,
         items: this.buildScreenItems(screen),
@@ -523,9 +540,6 @@ export default class FlowConfigResourcePicker extends LightningElement {
         return;
       }
 
-      const screenMatches = `${screenNode.label} ${screenNode.name || ""}`
-        .toLowerCase()
-        .includes(query);
       if (screenMatches) {
         options.push(screenNode);
       }
@@ -842,6 +856,7 @@ export default class FlowConfigResourcePicker extends LightningElement {
 
   get automaticOutputContainerOptions() {
     const outputMap = this.automaticOutputMap;
+    const query = this.filterQuery.toLowerCase();
     const keys = Object.keys(outputMap).filter((key) =>
       Array.isArray(outputMap[key])
     );
@@ -849,69 +864,86 @@ export default class FlowConfigResourcePicker extends LightningElement {
       (key) =>
         !keys.some((parent) => parent !== key && key.startsWith(`${parent}.`))
     );
-    return rootKeys
-      .map((path) => {
-        const screenField = (this._builderContext.screens || [])
-          .map((screen) => this.findScreenFieldByName(screen.fields, path))
-          .find(Boolean);
-        if (screenField) {
-          return null;
-        }
-        const variable = (this._builderContext.variables || []).find(
-          (item) => item.name === path
-        );
-        const subflow = (this._builderContext.subflows || []).find(
-          (item) => (item.name || item.apiName) === path
-        );
-        const action = (this._builderContext.actionCalls || []).find(
-          (item) => (item.name || item.apiName) === path
-        );
-        const apexAction = (this._builderContext.apexPluginCalls || []).find(
-          (item) => (item.name || item.apiName) === path
-        );
-        const bridgedElement = this.flowElementMetadata[path];
-        const isSubflow =
-          Boolean(subflow) || bridgedElement?.kind === "Subflow";
-        const items = this.buildOutputItems(path, outputMap[path]);
-        if (!items.length) {
-          return null;
-        }
-        return {
-          key: `automatic-container-${path}`,
-          label:
-            variable?.label ||
-            (isSubflow
-              ? `Outputs from ${subflow?.label || bridgedElement?.label || path}`
-              : null) ||
-            action?.label ||
-            apexAction?.label ||
-            bridgedElement?.label ||
-            path,
-          name: path,
-          path,
-          items,
-          category: variable
-            ? variable.dataType === "Apex"
-              ? "Apex-Defined Variables"
-              : "Variables"
-            : isSubflow
-              ? "Subflows"
-              : apexAction
-                ? "Apex Action Outputs"
-                : action
-                  ? "Action Outputs"
-                  : "Element Outputs",
-          isListContainer: true,
-          browseFields: true,
-          iconName: variable
-            ? "utility:apex"
-            : isSubflow
-              ? "utility:flow"
-              : bridgedElement?.iconName || "utility:fallback",
-          meta: "Outputs"
-        };
-      })
-      .filter(Boolean);
+    return rootKeys.flatMap((path) => {
+      const screenField = (this._builderContext.screens || [])
+        .map((screen) => this.findScreenFieldByName(screen.fields, path))
+        .find(Boolean);
+      if (screenField) {
+        return [];
+      }
+      const variable = (this._builderContext.variables || []).find(
+        (item) => item.name === path
+      );
+      const subflow = (this._builderContext.subflows || []).find(
+        (item) => (item.name || item.apiName) === path
+      );
+      const action = (this._builderContext.actionCalls || []).find(
+        (item) => (item.name || item.apiName) === path
+      );
+      const apexAction = (this._builderContext.apexPluginCalls || []).find(
+        (item) => (item.name || item.apiName) === path
+      );
+      const bridgedElement = this.flowElementMetadata[path];
+      const isSubflow = Boolean(subflow) || bridgedElement?.kind === "Subflow";
+      const label =
+        variable?.label ||
+        (isSubflow
+          ? `Outputs from ${subflow?.label || bridgedElement?.label || path}`
+          : null) ||
+        action?.label ||
+        apexAction?.label ||
+        bridgedElement?.label ||
+        path;
+      const category = variable
+        ? variable.dataType === "Apex"
+          ? "Apex-Defined Variables"
+          : "Variables"
+        : isSubflow
+          ? "Subflows"
+          : apexAction
+            ? "Apex Action Outputs"
+            : action
+              ? "Action Outputs"
+              : "Element Outputs";
+      const containerMatches =
+        !query ||
+        `${label} ${path} ${category} outputs`.toLowerCase().includes(query);
+      const outputsMayMatch =
+        !query || JSON.stringify(outputMap[path]).toLowerCase().includes(query);
+      if (query && !containerMatches && !outputsMayMatch) {
+        return [];
+      }
+      const items = this.buildOutputItems(path, outputMap[path]);
+      if (!items.length) {
+        return [];
+      }
+      const container = {
+        key: `automatic-container-${path}`,
+        label,
+        name: path,
+        path,
+        items,
+        category,
+        isListContainer: true,
+        browseFields: true,
+        iconName: variable
+          ? "utility:apex"
+          : isSubflow
+            ? "utility:flow"
+            : bridgedElement?.iconName || "utility:fallback",
+        meta: "Outputs"
+      };
+      if (!query || containerMatches) {
+        return [container];
+      }
+      return this.searchListItems(items, query, [
+        this.asBrowseNode(container)
+      ]).map((item) => ({
+        ...item,
+        label: `${label} > ${item.searchLabel || item.label}`,
+        category
+      }));
+    });
   }
 
   get resourceGroups() {
@@ -1017,6 +1049,9 @@ export default class FlowConfigResourcePicker extends LightningElement {
   }
 
   get hasResults() {
+    if (!this.currentBrowseNode && !this.rootResultsReady) {
+      return false;
+    }
     return this.currentBrowseNode
       ? this.filteredResources.length > 0
       : this.resourceGroups.length > 0;
@@ -1529,6 +1564,9 @@ export default class FlowConfigResourcePicker extends LightningElement {
   }
 
   get noResultsMessage() {
+    if (!this.currentBrowseNode && !this.rootResultsReady) {
+      return "Loading resources…";
+    }
     if (this.isBrowsingRecord && !this.objectInfo) {
       return `Loading ${this.currentBrowseNode.objectType} fields…`;
     }
@@ -1551,11 +1589,47 @@ export default class FlowConfigResourcePicker extends LightningElement {
   }
 
   handleFocus() {
+    const wasOpen = this.isOpen;
     this.requestAutomaticOutputRefresh();
     this.prefetchHierarchySettings();
     this.isOpen = true;
     this.isEditing = true;
     this.activeIndex = -1;
+    if (!wasOpen) {
+      this.scheduleRootResultsAfterPaint();
+    }
+  }
+
+  scheduleRootResultsAfterPaint() {
+    this.cancelRootResultsLoad();
+    this.rootResultsReady = false;
+    const finish = () => {
+      this.rootResultsFrame = null;
+      if (this.isOpen) {
+        this.rootResultsReady = true;
+      }
+    };
+    if (typeof window.requestAnimationFrame !== "function") {
+      Promise.resolve().then(finish);
+      return;
+    }
+    // Two frames guarantee that the loading shell paints before resource-tree
+    // construction begins. Both scheduled callbacks are canceled on close.
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    this.rootResultsFrame = window.requestAnimationFrame(() => {
+      // eslint-disable-next-line @lwc/lwc/no-async-operation
+      this.rootResultsFrame = window.requestAnimationFrame(finish);
+    });
+  }
+
+  cancelRootResultsLoad() {
+    if (
+      this.rootResultsFrame !== null &&
+      typeof window.cancelAnimationFrame === "function"
+    ) {
+      window.cancelAnimationFrame(this.rootResultsFrame);
+    }
+    this.rootResultsFrame = null;
   }
 
   @api
@@ -1745,6 +1819,7 @@ export default class FlowConfigResourcePicker extends LightningElement {
       }
     }
     this.activeIndex = -1;
+    this.scheduleRootResultsAfterPaint();
     Promise.resolve().then(() => {
       this.template.querySelector("lightning-input")?.focus();
     });
@@ -1769,6 +1844,9 @@ export default class FlowConfigResourcePicker extends LightningElement {
   }
 
   get visibleOptions() {
+    if (!this.currentBrowseNode && !this.rootResultsReady) {
+      return [];
+    }
     return this.currentBrowseNode
       ? this.filteredResources
       : this.resourceGroups.flatMap((group) => group.resources);
@@ -2333,6 +2411,7 @@ export default class FlowConfigResourcePicker extends LightningElement {
   }
 
   closePicker() {
+    this.cancelRootResultsLoad();
     window.clearTimeout(this.focusOutTimer);
     this.focusOutTimer = null;
     if (this.hasPendingEdit) {
@@ -2365,6 +2444,7 @@ export default class FlowConfigResourcePicker extends LightningElement {
 
   disconnectedCallback() {
     this.hydrationGeneration += 1;
+    this.cancelRootResultsLoad();
     window.clearTimeout(this.focusOutTimer);
     window.clearTimeout(this.editTransitionTimer);
     removePopoverViewportListeners(this.boundViewportHandler);

@@ -2,7 +2,18 @@ import { createElement } from "lwc";
 import FlowConfigValueInput from "c/flowConfigValueInput";
 
 describe("c-flow-config-value-input", () => {
+  beforeEach(() => {
+    jest
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => {
+        callback(0);
+        return 1;
+      });
+    jest.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+  });
+
   afterEach(() => {
+    jest.restoreAllMocks();
     while (document.body.firstChild) {
       document.body.removeChild(document.body.firstChild);
     }
