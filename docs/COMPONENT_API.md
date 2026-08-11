@@ -173,6 +173,29 @@ In multiple mode, `newValue` is a JSON string so it can be stored in a Flow Stri
 
 The selected-fields panel is additive to the normal results-popover height when viewport space permits. On constrained screens, the combined popover is clamped to the available space and the selected panel and results retain their own scrolling regions.
 
+## `c-flow-config-object-picker`
+
+Searches accessible Salesforce objects and persists the selected object API name as a Flow String. It uses the same selected pill, searchable grouped popover, keyboard behavior, shared header, and viewport-aware placement as the resource and field pickers. Saved API names remain visible even if their metadata cannot currently be loaded.
+
+| Attribute                | Type         | Default                   | Description                                                      |
+| ------------------------ | ------------ | ------------------------- | ---------------------------------------------------------------- |
+| `label`                  | String       | `Object`                  | Visible form label.                                              |
+| `property-name`          | String       | —                         | Flow String property used to persist the object API name.        |
+| `value`                  | String       | —                         | Current object API name, such as `Account` or `Invoice__c`.      |
+| `available-object-types` | String/Array | empty                     | Optional API-name allowlist; empty or `All` accepts all objects. |
+| `queryable-only`         | Boolean      | `false`                   | Excludes objects that cannot be queried.                         |
+| `show-all`               | Boolean      | `false`                   | Initially includes specialized accessible objects when true.     |
+| `max-results`            | Number       | `200`                     | Number of matching objects rendered per scroll-loaded batch.     |
+| `required`               | Boolean      | `false`                   | Enables required validation.                                     |
+| `placeholder`            | String       | object-search placeholder | Empty-state text.                                                |
+| `field-level-help`       | String       | —                         | Help text.                                                       |
+
+Event `objectchange` returns `{ name, newValue, newValueDataType, object, objectType }`. `object` is the selected descriptor and `objectType` mirrors `newValue` for consumers that coordinate generic SObject mappings. Selection and removal also dispatch the standard Flow input-value event when `property-name` is set. The root-level `Show all objects` switch updates the local filter and emits `filterchange` with `{ showAll }`.
+
+By default, the picker shows user-facing standard objects plus custom and external objects. Feed, history, share, platform-event, custom-setting, and other internal read-only metadata remains available through `Show all objects`. Discovery is cacheable and respects object accessibility. Descriptors include API name, singular/plural labels, custom/queryable/searchable/custom-setting flags, and create/update/delete capabilities so consumers can filter without another metadata request. Unusable Salesforce missing-label markers fall back to the API name.
+
+The object list loads in batches. Reaching the bottom of the results panel appends the next `max-results` matches, while changing the search or object filter restarts from the first batch.
+
 ## `c-flow-config-field-input`
 
 Composes `flowConfigFieldPicker` and `flowConfigValueInput` for properties that normally select an SObject field but may deliberately use a custom literal or Flow resource. It accepts the field picker's attributes plus `value-data-type`, `builder-context`, `automatic-output-variables`, `api-version`, `allow-custom`, and controlled `custom-mode`.
@@ -186,6 +209,7 @@ Public validation methods: `setCustomValidity(message)`, `reportValidity()`, and
 - `flowConfigEditorBase`: the editor base class documented above.
 - `flowConfigEditorUtils`: Flow event creation, value parsing, resource collection, type normalization, labels, and icon selection.
 - `flowConfigResourceModel`: resource filtering, grouping, search, and reference lookup.
+- `flowConfigObjectModel`: object-label normalization and default/all-object filtering.
 - `flowConfigSchemaService`: cached SObject path descriptions.
 - `flowConfigMetadataService`: cached Apex-defined and hierarchy-setting metadata.
 - `flowConfigGenericTypeCoordinator`: pure state planning for collection/type changes.

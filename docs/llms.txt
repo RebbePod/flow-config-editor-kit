@@ -10,7 +10,7 @@ Unnamespaced package. Components resolve under the `c` namespace: `c/flowConfigE
 
 A Flow **screen component** (an LWC exposed to `lightning__FlowScreen`) can declare a **custom property editor** — another LWC that renders the configuration panel a Flow admin sees in Flow Builder.
 
-Flow Builder hands that editor four inputs and expects specific events back. This framework supplies both sides: a base class that owns the contract, and pickers that browse Flow resources, SObject fields, and Apex-defined types.
+Flow Builder hands that editor four inputs and expects specific events back. This framework supplies both sides: a base class that owns the contract, and pickers that browse Flow resources, Salesforce objects, SObject fields, and Apex-defined types.
 
 Two files are involved:
 
@@ -231,6 +231,12 @@ Event `resourcechange` → `{ name, newValue, newValueDataType, resource }`.
 `label`, `property-name`, `object-api-name`, `value`, `multiple`, `sortable` (default `true`), `accepted-types`, `max-results`, `max-relationship-depth` (default 5), `required`, `placeholder`, `field-level-help`.
 
 Event `fieldchange` → `{ name, newValue, newValueDataType, field, selectedValues, selectedFields }`.
+
+### `c-flow-config-object-picker` — Salesforce object API-name selection
+
+`label`, `property-name`, `value`, `available-object-types` (comma-separated or array; empty/`All` = no allowlist), `queryable-only`, `show-all` (default false), `max-results` (scroll-loaded batch size, default 200), `required`, `placeholder`, `field-level-help`.
+
+Event `objectchange` → `{ name, newValue, newValueDataType, object, objectType }`. The selected API name is persisted as a Flow String. When `property-name` is supplied, selection and clearing also dispatch the standard Flow input-value event. The picker restores saved API names, groups standard and custom objects, and uses the shared picker popover and keyboard interaction. It initially shows user-facing standard, custom, and external objects. A root-level `Show all objects` switch reveals accessible feed/history/share/event/setting/internal objects and emits `filterchange` → `{ showAll }`. Reaching the bottom appends another `max-results` batch. Search and filter changes reset to the first batch. Missing-label markers fall back to API names.
 
 ### `c-flow-config-field-input` — field or custom value
 

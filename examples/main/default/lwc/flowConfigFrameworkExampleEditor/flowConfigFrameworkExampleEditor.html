@@ -18,6 +18,42 @@
         </div>
       </section>
     </template>
+    <section class="collection-group" aria-label="Direct object selection">
+      <c-flow-config-object-picker
+        data-validatable
+        data-property="directObjectApiName"
+        label="Direct Object Name"
+        property-name="directObjectApiName"
+        value={directObjectApiName}
+        queryable-only
+        field-level-help="Searches accessible queryable Salesforce objects by label or API name."
+        onobjectchange={handleDirectObjectChange}
+      ></c-flow-config-object-picker>
+
+      <div class="dependent-field">
+        <c-flow-config-field-picker
+          data-validatable
+          data-property="directFieldApiName"
+          label="Field from Direct Object"
+          property-name="directFieldApiName"
+          value={directFieldApiName}
+          object-api-name={directObjectApiName}
+          field-level-help="Demonstrates using a directly selected object API name to drive a field picker."
+          onfieldchange={handleFieldChange}
+        ></c-flow-config-field-picker>
+        <template lwc:if={directResetMessage}>
+          <p class="field-reset-notice" role="status">
+            <lightning-icon
+              icon-name="utility:info"
+              size="xx-small"
+              alternative-text=""
+            ></lightning-icon>
+            <span>{directResetMessage}</span>
+          </p>
+        </template>
+      </div>
+    </section>
+
     <section class="collection-group" aria-label="Single field collection">
       <c-flow-config-resource-picker
         data-validatable

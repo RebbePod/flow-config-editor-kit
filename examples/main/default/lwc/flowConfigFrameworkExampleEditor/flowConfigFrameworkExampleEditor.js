@@ -10,6 +10,8 @@ import FlowConfigEditorBase from "c/flowConfigEditorBase";
  * feeds which field picker, and what counts as valid.
  */
 export default class FlowConfigFrameworkExampleEditor extends FlowConfigEditorBase {
+  directObjectApiName = null;
+  directFieldApiName = null;
   singleRecords = null;
   singleObjectApiName = null;
   multipleRecords = null;
@@ -23,6 +25,8 @@ export default class FlowConfigFrameworkExampleEditor extends FlowConfigEditorBa
   flowRuntimeApiVersion;
   singleResetMessage = "";
   multipleResetMessage = "";
+  directResetMessage = "";
+  directResetTimer;
   singleResetTimer;
   multipleResetTimer;
   repairedMappingKey = "";
@@ -48,6 +52,8 @@ export default class FlowConfigFrameworkExampleEditor extends FlowConfigEditorBa
     );
     this.singleRecords = this.reference("singleRecords", legacyRecords);
     this.multipleRecords = this.reference("multipleRecords");
+    this.directObjectApiName = this.input("directObjectApiName");
+    this.directFieldApiName = this.input("directFieldApiName");
     this.singleObjectApiName = this.input(
       "singleObjectApiName",
       this.genericType("TSingle") || legacyObjectApiName
@@ -118,6 +124,26 @@ export default class FlowConfigFrameworkExampleEditor extends FlowConfigEditorBa
     this.handleRecordsChange("multiple", event);
   }
 
+  handleDirectObjectChange(event) {
+    this.clearErrors();
+    const nextObjectApiName = event.detail?.newValue || null;
+    const objectChanged = this.directObjectApiName !== nextObjectApiName;
+    this.directObjectApiName = nextObjectApiName;
+    if (!objectChanged || !this.directFieldApiName) {
+      return;
+    }
+    this.directFieldApiName = null;
+    this.clearInput("directFieldApiName");
+    window.clearTimeout(this.directResetTimer);
+    this.directResetMessage =
+      "Field selection reset because the direct object changed.";
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    this.directResetTimer = window.setTimeout(() => {
+      this.directResetMessage = "";
+      this.directResetTimer = null;
+    }, 5000);
+  }
+
   handleRecordsChange(mode, event) {
     this.clearErrors();
     const { newValue, resource } = event.detail;
@@ -165,7 +191,12 @@ export default class FlowConfigFrameworkExampleEditor extends FlowConfigEditorBa
 
   handleFieldChange(event) {
     this.clearErrors();
-    if (event.detail.name === "singleFieldApiName") {
+    if (event.detail.name === "directFieldApiName") {
+      this.directFieldApiName = event.detail.newValue;
+      window.clearTimeout(this.directResetTimer);
+      this.directResetTimer = null;
+      this.directResetMessage = "";
+    } else if (event.detail.name === "singleFieldApiName") {
       this.singleFieldApiName = event.detail.newValue;
       this.clearFieldResetNotice("single");
     } else {
@@ -202,6 +233,7 @@ export default class FlowConfigFrameworkExampleEditor extends FlowConfigEditorBa
   }
 
   disconnectedCallback() {
+    window.clearTimeout(this.directResetTimer);
     window.clearTimeout(this.singleResetTimer);
     window.clearTimeout(this.multipleResetTimer);
   }

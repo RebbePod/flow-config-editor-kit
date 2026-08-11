@@ -143,6 +143,41 @@ public with sharing class FlowConfigApexTypeController {
     public List<MemberDescriptor> fields { get; set; }
   }
 
+  public class ObjectDescriptor implements Comparable {
+    @AuraEnabled
+    public String apiName { get; set; }
+    @AuraEnabled
+    public String label { get; set; }
+    @AuraEnabled
+    public String labelPlural { get; set; }
+    @AuraEnabled
+    public Boolean isCustom { get; set; }
+    @AuraEnabled
+    public Boolean isQueryable { get; set; }
+    @AuraEnabled
+    public Boolean isCreateable { get; set; }
+    @AuraEnabled
+    public Boolean isUpdateable { get; set; }
+    @AuraEnabled
+    public Boolean isDeletable { get; set; }
+    @AuraEnabled
+    public Boolean isSearchable { get; set; }
+    @AuraEnabled
+    public Boolean isCustomSetting { get; set; }
+
+    public Integer compareTo(Object other) {
+      ObjectDescriptor candidate = (ObjectDescriptor) other;
+      String left = String.isBlank(label) ? apiName : label;
+      String right = String.isBlank(candidate.label)
+        ? candidate.apiName
+        : candidate.label;
+      Integer labelOrder = left.toLowerCase().compareTo(right.toLowerCase());
+      return labelOrder == 0
+        ? apiName.toLowerCase().compareTo(candidate.apiName.toLowerCase())
+        : labelOrder;
+    }
+  }
+
   @AuraEnabled(cacheable=true)
   public static List<MemberDescriptor> describeType(String apexClassName) {
     if (String.isBlank(apexClassName)) {
@@ -262,6 +297,59 @@ public with sharing class FlowConfigApexTypeController {
     descriptor.parentObjectType = parentObjectType;
     descriptor.referenceTargets = fieldDescriptor.referenceTargets;
     return descriptor;
+  }
+
+  /**
+   * Returns every SObject visible to the running user. Consumers apply their
+   * own queryable/createable filters so one cached describe response can serve
+   * every object picker in a property editor.
+   */
+  @AuraEnabled(cacheable=true)
+  public static List<ObjectDescriptor> describeObjects() {
+    List<String> candidateNames = new List<String>(globalDescribe().keySet());
+    candidateNames.sort();
+    List<ObjectDescriptor> objects = new List<ObjectDescriptor>();
+    for (
+      Integer offset = 0;
+      offset < candidateNames.size();
+      offset += DESCRIBE_CHUNK_SIZE
+    ) {
+      Integer limitIndex = Math.min(
+        offset + DESCRIBE_CHUNK_SIZE,
+        candidateNames.size()
+      );
+      List<String> chunk = new List<String>();
+      for (Integer index = offset; index < limitIndex; index++) {
+        chunk.add(candidateNames[index]);
+      }
+      for (
+        Schema.DescribeSObjectResult objectDescribe : Schema.describeSObjects(
+          chunk,
+          SObjectDescribeOptions.DEFERRED
+        )
+      ) {
+        if (
+          !objectDescribe.isAccessible() ||
+          objectDescribe.isDeprecatedAndHidden()
+        ) {
+          continue;
+        }
+        ObjectDescriptor descriptor = new ObjectDescriptor();
+        descriptor.apiName = objectDescribe.getName();
+        descriptor.label = objectDescribe.getLabel();
+        descriptor.labelPlural = objectDescribe.getLabelPlural();
+        descriptor.isCustom = objectDescribe.isCustom();
+        descriptor.isQueryable = objectDescribe.isQueryable();
+        descriptor.isCreateable = objectDescribe.isCreateable();
+        descriptor.isUpdateable = objectDescribe.isUpdateable();
+        descriptor.isDeletable = objectDescribe.isDeletable();
+        descriptor.isSearchable = objectDescribe.isSearchable();
+        descriptor.isCustomSetting = objectDescribe.isCustomSetting();
+        objects.add(descriptor);
+      }
+    }
+    objects.sort();
+    return objects;
   }
 
   @AuraEnabled(cacheable=true)

@@ -12,6 +12,7 @@ Consuming custom property editor (examples/...Editor)
   ├─ flowConfigValueInput
   │    └─ flowConfigResourcePicker
   ├─ flowConfigFieldPicker
+  ├─ flowConfigObjectPicker
   └─ flowConfigFieldInput
        ├─ flowConfigFieldPicker
        └─ flowConfigValueInput
@@ -33,11 +34,11 @@ It offers two levels. The imperative methods are the real API and carry no assum
 
 ### Presentation
 
-`flowConfigResourcePicker`, `flowConfigFieldPicker`, and `flowConfigPickerHeader` render the UI and manage local navigation. `flowConfigValueInput` provides a deliberately small wrapper for the common literal-or-resource pattern. `flowConfigFieldInput` composes the field and value inputs when a consumer deliberately offers both a schema-backed field choice and a custom literal/resource mode.
+`flowConfigResourcePicker`, `flowConfigObjectPicker`, `flowConfigFieldPicker`, and `flowConfigPickerHeader` render the UI and manage local navigation. `flowConfigValueInput` provides a deliberately small wrapper for the common literal-or-resource pattern. `flowConfigFieldInput` composes the field and value inputs when a consumer deliberately offers both a schema-backed field choice and a custom literal/resource mode.
 
 ### Domain/model
 
-`flowConfigResourceModel` and `flowConfigEditorUtils` normalize Salesforce's varying metadata shapes into a stable resource model. Filtering operates on normalized type, collection, source, label, API name, and reference values.
+`flowConfigResourceModel`, `flowConfigObjectModel`, and `flowConfigEditorUtils` normalize Salesforce's varying metadata shapes into stable picker models. Filtering operates on normalized type, collection, source, label, API name, object capabilities, and reference values.
 
 ### Coordination
 
@@ -45,7 +46,7 @@ It offers two levels. The imperative methods are the real API and carry no assum
 
 ### Metadata
 
-`flowConfigSchemaService` and `flowConfigMetadataService` cache server descriptions. The Apex controller uses Schema describe for SObjects and accessible hierarchy settings and parses Apex source as a fallback. The Visualforce bridge uses the Tooling API symbol table when Flow does not expose Apex-defined members.
+`flowConfigSchemaService` and `flowConfigMetadataService` cache server descriptions. The Apex controller uses Schema describe for accessible SObject discovery, field paths, and hierarchy settings and parses Apex source as a fallback. The Visualforce bridge uses the Tooling API symbol table when Flow does not expose Apex-defined members.
 
 ## State ownership
 
