@@ -172,6 +172,110 @@ export function normalizeOutputType(value, subtype) {
   return declared || "String";
 }
 
+function friendlyResourceType(value) {
+  const normalized = normalizeOutputType(value);
+  const labels = {
+    Apex: "Apex-defined",
+    SObject: "Record",
+    String: "Text"
+  };
+  return labels[normalized] || normalized;
+}
+
+function naturalList(values) {
+  if (values.length < 2) {
+    return values[0] || "compatible";
+  }
+  if (values.length === 2) {
+    return `${values[0]} or ${values[1]}`;
+  }
+  return `${values.slice(0, -1).join(", ")}, or ${values[values.length - 1]}`;
+}
+
+/**
+ * Applies the same type and cardinality contract used to filter picker results
+ * to a committed or restored Flow reference. Incomplete descriptors are not
+ * rejected until Salesforce metadata resolves their actual type.
+ */
+export function buildResourceCompatibilityError(
+  resource,
+  {
+    acceptedTypes = "",
+    collection = "any",
+    inputLabel = "This input",
+    resourceLabel,
+    selectionKind = "resource",
+    allowLiteral = false
+  } = {}
+) {
+  if (!resource) {
+    return "";
+  }
+  const rawType = resource.dataType || resource.valueDataType || resource.type;
+  if (!rawType || String(rawType).toLowerCase() === "field reference") {
+    return "";
+  }
+  const actualType = normalizeOutputType(rawType, resource.subtype);
+  const expectedTypes = [
+    ...new Set(
+      String(acceptedTypes)
+        .split(",")
+        .map((type) => normalizeOutputType(type.trim()))
+        .filter(Boolean)
+    )
+  ];
+  const typeMismatch =
+    expectedTypes.length > 0 &&
+    !expectedTypes.some(
+      (type) => type.toLowerCase() === actualType.toLowerCase()
+    );
+  const isCollection =
+    resource.isCollection === true || resource.isCollection === "true";
+  const collectionMismatch =
+    (collection === "only" && !isCollection) ||
+    (collection === "exclude" && isCollection);
+  if (!typeMismatch && !collectionMismatch) {
+    return "";
+  }
+
+  const resolvedResourceLabel =
+    resourceLabel ||
+    resource.displayLabels?.join(" > ") ||
+    resource.label ||
+    resource.name ||
+    resource.reference ||
+    "This resource";
+  const actualDescription = `${friendlyResourceType(actualType)}${
+    isCollection ? " collection" : ""
+  }`;
+  const expectedDescription = naturalList(
+    expectedTypes.map(friendlyResourceType)
+  );
+  let requirement;
+  if (collection === "only") {
+    requirement = expectedTypes.length
+      ? `a collection of ${expectedDescription} values`
+      : "a collection";
+  } else if (collection === "exclude") {
+    requirement = expectedTypes.length
+      ? `a single ${expectedDescription} value`
+      : "a single value";
+  } else {
+    requirement = expectedTypes.length
+      ? expectedDescription
+      : "a compatible value";
+  }
+  let nextStep;
+  if (expectedTypes.length === 1 && expectedTypes[0] === "Number") {
+    nextStep = `Select a Number ${selectionKind}${
+      allowLiteral ? " or enter a numeric value" : ""
+    }.`;
+  } else {
+    nextStep = `Select a compatible ${selectionKind}.`;
+  }
+  return `“${resolvedResourceLabel}” has type ${actualDescription}. ${inputLabel} requires ${requirement}. ${nextStep}`;
+}
+
 export function asBrowseNode(item) {
   return {
     kind: "list",

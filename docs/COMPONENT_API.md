@@ -120,6 +120,10 @@ Events: `valuechange`, with `{ name, newValue, newValueDataType, resource }`.
 
 Public validation methods: `setCustomValidity(message)`, `reportValidity()`, and `validationMessage`.
 
+Committed and restored Flow references are validated against the expected scalar type. This includes manually pasted references that bypass the visible result filter. When metadata is available, an incompatible reference reports the resource label, its resolved type/cardinality, and the expected input shape. References with unresolved metadata remain allowed until Salesforce supplies their type.
+
+Number literals must parse completely as finite numbers. Partially numeric text and nonnumeric values remain uncommitted and display guidance to enter a number or select a Number resource.
+
 ## `c-flow-config-resource-picker`
 
 The lower-level Flow resource browser.
@@ -148,6 +152,8 @@ Events: `resourcechange`, with `{ name, newValue, newValueDataType, resource }`.
 
 When `property-name` is provided, selection and removal also dispatch the standard `configuration_editor_input_value_changed` event expected by Flow Builder. Removal uses the same event with a `null` value, which is how Flow Builder's custom property editor contract clears an input assignment.
 
+`reportValidity()` applies the same `accepted-types` and `collection` compatibility rules to committed, restored, and manually pasted references that the browser applies while filtering results. Known incompatible references return `false` and display a contextual error. References whose metadata cannot yet be resolved are not rejected speculatively.
+
 ## `c-flow-config-field-picker`
 
 Searches fields for a known SObject and supports relationship traversal.
@@ -172,6 +178,8 @@ Events: `fieldchange`, with `{ name, newValue, newValueDataType, field, selected
 In multiple mode, `newValue` is a JSON string so it can be stored in a Flow String property. `selectedValues` preserves selection order for immediate editor use. Set `sortable=false` when order has no business meaning and the picker should behave as a simple multi-select dropdown.
 
 The selected-fields panel is additive to the normal results-popover height when viewport space permits. On constrained screens, the combined popover is clamped to the available space and the selected panel and results retain their own scrolling regions.
+
+Saved single and multiple selections are revalidated against `accepted-types` after their field metadata loads. A known incompatible field returns `false` from `reportValidity()` and displays its label, API path, actual Flow type, and required type. Unresolved legacy field paths remain usable rather than being rejected without metadata.
 
 ## `c-flow-config-object-picker`
 

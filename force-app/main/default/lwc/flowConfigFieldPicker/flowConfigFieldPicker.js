@@ -23,6 +23,7 @@ import {
   isActivationKey,
   nextActiveIndex
 } from "c/flowConfigPickerInteraction";
+import { buildResourceCompatibilityError } from "c/flowConfigResourceModel";
 
 export default class FlowConfigFieldPicker extends LightningElement {
   @api label = "Field";
@@ -966,7 +967,46 @@ export default class FlowConfigFieldPicker extends LightningElement {
     if (this.customValidityMessage) {
       return this.customValidityMessage;
     }
+    const fieldError = this.selectedFieldValidationMessage;
+    if (fieldError) {
+      return fieldError;
+    }
     return this.required && !this.hasValue ? `${this.label} is required.` : "";
+  }
+
+  get selectedFieldValidationMessage() {
+    if (!this.hasValue || !this.acceptedTypes) {
+      return "";
+    }
+    const incompatibleFields = this.selectedFields.filter(
+      (field) =>
+        field.dataType &&
+        !isFieldTypeAccepted(field.dataType, this.acceptedTypes)
+    );
+    if (!incompatibleFields.length) {
+      return "";
+    }
+    const field = incompatibleFields[0];
+    const message = buildResourceCompatibilityError(
+      {
+        ...field,
+        dataType: flowDataTypeForField(field.dataType),
+        isCollection: false
+      },
+      {
+        acceptedTypes: this.acceptedTypes,
+        inputLabel: this.label,
+        resourceLabel:
+          field.path && field.path !== field.label
+            ? `${field.label} (${field.path})`
+            : field.label,
+        selectionKind: "field"
+      }
+    );
+    const additionalCount = incompatibleFields.length - 1;
+    return additionalCount
+      ? `${message} ${additionalCount} additional selected field${additionalCount === 1 ? " is" : "s are"} incompatible.`
+      : message;
   }
 
   get showSelectedValidationMessage() {

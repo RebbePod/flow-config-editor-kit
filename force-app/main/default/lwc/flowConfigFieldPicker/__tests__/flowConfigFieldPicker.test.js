@@ -110,6 +110,27 @@ describe("c-flow-config-field-picker", () => {
     ).toEqual(["Amount__c", "Ratio__c"]);
   });
 
+  it("flags a restored field that is incompatible with accepted types", async () => {
+    const element = createElement("c-flow-config-field-picker", {
+      is: FlowConfigFieldPicker
+    });
+    element.label = "Amount Field";
+    element.objectApiName = "Account";
+    element.acceptedTypes = "Number";
+    element.value = "Name";
+    document.body.appendChild(element);
+    getObjectInfo.emit(ACCOUNT_OBJECT_INFO);
+    await Promise.resolve();
+
+    expect(element.validationMessage).toBe(
+      "“Account Name (Name)” has type Text. Amount Field requires Number. Select a Number field."
+    );
+    expect(element.reportValidity()).toBe(false);
+    expect(element.shadowRoot.querySelector(".picker__error").textContent).toBe(
+      element.validationMessage
+    );
+  });
+
   it("shows each target for a polymorphic relationship", async () => {
     const element = createElement("c-flow-config-field-picker", {
       is: FlowConfigFieldPicker

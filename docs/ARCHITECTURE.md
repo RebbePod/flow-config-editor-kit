@@ -38,7 +38,7 @@ It offers two levels. The imperative methods are the real API and carry no assum
 
 ### Domain/model
 
-`flowConfigResourceModel`, `flowConfigObjectModel`, and `flowConfigEditorUtils` normalize Salesforce's varying metadata shapes into stable picker models. Filtering operates on normalized type, collection, source, label, API name, object capabilities, and reference values.
+`flowConfigResourceModel`, `flowConfigObjectModel`, and `flowConfigEditorUtils` normalize Salesforce's varying metadata shapes into stable picker models. Filtering operates on normalized type, collection, source, label, API name, object capabilities, and reference values. The resource model also owns the shared contextual compatibility error used to revalidate committed resource and field selections against those same type rules.
 
 ### Coordination
 

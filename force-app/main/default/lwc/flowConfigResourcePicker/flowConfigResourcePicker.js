@@ -36,6 +36,7 @@ import {
 import {
   asBrowseNode,
   automaticOutputEntry,
+  buildResourceCompatibilityError,
   buildOutputItems as buildResourceOutputItems,
   buildRecordBrowseStack,
   CATEGORY_ICONS,
@@ -100,6 +101,7 @@ export default class FlowConfigResourcePicker extends LightningElement {
   selectedGlobalHydrationKey = "";
   hydrationGeneration = 0;
   customValidityMessage = "";
+  inputValidityMessage = "";
   flowElementMetadata = {};
   flowMetadataRequestStarted = false;
   automaticOutputRefreshRequested = false;
@@ -1637,6 +1639,8 @@ export default class FlowConfigResourcePicker extends LightningElement {
 
   handleSearch(event) {
     const nextQuery = inputEventValue(event);
+    this.inputValidityMessage = "";
+    event.currentTarget?.setCustomValidity(this.customValidityMessage);
     const activePath = this.currentBrowseNode
       ? this.currentBrowseNode.kind === "namespace"
         ? this.currentBrowseNode.namespace
@@ -2224,11 +2228,15 @@ export default class FlowConfigResourcePicker extends LightningElement {
 
   commitLiteral() {
     const raw = this.query.trim();
-    const value =
-      this.literalType === "Number" ? Number.parseFloat(raw) : this.query;
-    if (this.literalType === "Number" && Number.isNaN(value)) {
+    const value = this.literalType === "Number" ? Number(raw) : this.query;
+    if (this.literalType === "Number" && (!raw || !Number.isFinite(value))) {
+      this.inputValidityMessage = `${this.label} requires a numeric value. Enter a number or select a Number resource.`;
+      const input = this.template.querySelector("lightning-input");
+      input?.setCustomValidity(this.validationMessage);
+      input?.reportValidity();
       return;
     }
+    this.inputValidityMessage = "";
     this.invalidateSelectionHydration();
     this._incomingValue = value;
     this._value = value;
@@ -2259,6 +2267,7 @@ export default class FlowConfigResourcePicker extends LightningElement {
     this.invalidateSelectionHydration();
     this._incomingValue = null;
     this._value = null;
+    this.inputValidityMessage = "";
     this.hasPendingEdit = false;
     this.query = "";
     this.isOpen = keepOpen;
@@ -2371,6 +2380,7 @@ export default class FlowConfigResourcePicker extends LightningElement {
     this.invalidateSelectionHydration();
     this._incomingValue = normalized;
     this._value = normalized;
+    this.inputValidityMessage = "";
     const ancestors = resource?.browseAncestors || this.browseStack;
     const ancestorLabels = (ancestors || [])
       .map((item) => item.label)
@@ -2439,11 +2449,55 @@ export default class FlowConfigResourcePicker extends LightningElement {
     if (this.customValidityMessage) {
       return this.customValidityMessage;
     }
+    if (this.inputValidityMessage) {
+      return this.inputValidityMessage;
+    }
+    const literalError = this.committedLiteralValidationMessage;
+    if (literalError) {
+      return literalError;
+    }
     const globalFieldError = this.selectedGlobalFieldValidationMessage;
     if (globalFieldError) {
       return globalFieldError;
     }
+    const resourceError = this.selectedResourceValidationMessage;
+    if (resourceError) {
+      return resourceError;
+    }
     return this.required && !this.hasValue ? `${this.label} is required.` : "";
+  }
+
+  get committedLiteralValidationMessage() {
+    if (
+      this.isReferenceValue ||
+      !this.hasValue ||
+      this.literalType !== "Number"
+    ) {
+      return "";
+    }
+    const raw = String(this._value).trim();
+    return raw && Number.isFinite(Number(raw))
+      ? ""
+      : `${this.label} requires a numeric value. Enter a number or select a Number resource.`;
+  }
+
+  get selectedResourceValidationMessage() {
+    if (!this.isReferenceValue || !this.hasValue) {
+      return "";
+    }
+    const resource =
+      (this.selectedResourceSnapshot?.reference === this._value
+        ? this.selectedResourceSnapshot
+        : null) ||
+      this.selectedReferenceDescriptor ||
+      this.selectedResource;
+    return buildResourceCompatibilityError(resource, {
+      acceptedTypes: this.acceptedTypes,
+      collection: this.collection,
+      inputLabel: this.label,
+      resourceLabel: this.selectedPrimary,
+      allowLiteral: this.allowLiteral
+    });
   }
 
   get selectedGlobalFieldValidationMessage() {
@@ -2473,7 +2527,10 @@ export default class FlowConfigResourcePicker extends LightningElement {
     const input = this.template.querySelector("lightning-input");
     if (input) {
       input.setCustomValidity(this.validationMessage);
-      return input.reportValidity();
+      const reported = input.reportValidity();
+      return (
+        !this.validationMessage && (typeof reported !== "boolean" || reported)
+      );
     }
     return !this.validationMessage;
   }

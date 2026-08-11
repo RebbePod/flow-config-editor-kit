@@ -168,6 +168,63 @@ describe("c-flow-config-resource-picker", () => {
     );
   });
 
+  it("rejects a pasted resource whose type is incompatible with the input", async () => {
+    const element = createElement("c-flow-config-resource-picker", {
+      is: FlowConfigResourcePicker
+    });
+    element.label = "Page Size";
+    element.propertyName = "pageSize";
+    element.acceptedTypes = "Number";
+    element.collection = "exclude";
+    element.allowManual = true;
+    element.allowLiteral = true;
+    element.literalType = "Number";
+    element.builderContext = {
+      variables: [
+        { name: "TextVariable", label: "Text Variable", dataType: "String" }
+      ]
+    };
+    document.body.appendChild(element);
+
+    const input = element.shadowRoot.querySelector("lightning-input");
+    input.dispatchEvent(new CustomEvent("focus"));
+    input.dispatchEvent(
+      new CustomEvent("input", {
+        detail: { value: "{!TextVariable}" }
+      })
+    );
+    await flushPromises();
+    element.shadowRoot.querySelector("button.manual").click();
+    await flushPromises();
+
+    expect(element.validationMessage).toBe(
+      "“Text Variable” has type Text. Page Size requires a single Number value. Select a Number resource or enter a numeric value."
+    );
+    expect(element.reportValidity()).toBe(false);
+    expect(element.shadowRoot.querySelector(".picker__error").textContent).toBe(
+      element.validationMessage
+    );
+  });
+
+  it("accepts a restored resource with a compatible normalized numeric type", async () => {
+    const element = createElement("c-flow-config-resource-picker", {
+      is: FlowConfigResourcePicker
+    });
+    element.label = "Page Size";
+    element.acceptedTypes = "Number";
+    element.collection = "exclude";
+    element.valueDataType = "reference";
+    element.builderContext = {
+      variables: [{ name: "CountVariable", dataType: "Integer" }]
+    };
+    element.value = "{!CountVariable}";
+    document.body.appendChild(element);
+    await flushPromises();
+
+    expect(element.validationMessage).toBe("");
+    expect(element.reportValidity()).toBe(true);
+  });
+
   it("distinguishes API and System containers from Custom Label values", async () => {
     const element = createElement("c-flow-config-resource-picker", {
       is: FlowConfigResourcePicker

@@ -220,17 +220,25 @@ Override `configurationChanged(source)`; `source` is `builderContext` | `inputVa
 
 Event `valuechange` → `{ name, newValue, newValueDataType, resource }`.
 
+Committed, restored, and manually pasted Flow references are validated against the expected scalar type. When metadata resolves an incompatible reference, `validationMessage` names the resource, its actual type/cardinality, and the required input shape; `reportValidity()` returns `false`. Unknown reference types remain allowed until Salesforce metadata resolves them.
+
+Number literals must parse completely as finite numbers. Partially numeric or nonnumeric text is not committed and produces a contextual validation error.
+
 ### `c-flow-config-resource-picker` — Flow resource browser
 
 Above, plus `accepted-types` (comma-separated; empty = all), `collection` (`any`|`only`|`exclude`), `allow-manual`, `allow-literal`, `allow-record-fields`, `literal-type`, `max-results`.
 
 Event `resourcechange` → `{ name, newValue, newValueDataType, resource }`.
 
+Committed, restored, and manually pasted references use the same `accepted-types` and `collection` rules as visible picker results. Known incompatibilities produce a contextual `validationMessage` and make `reportValidity()` return `false`; unresolved references remain allowed until metadata becomes available.
+
 ### `c-flow-config-field-picker` — SObject field selection
 
 `label`, `property-name`, `object-api-name`, `value`, `multiple`, `sortable` (default `true`), `accepted-types`, `max-results`, `max-relationship-depth` (default 5), `required`, `placeholder`, `field-level-help`.
 
 Event `fieldchange` → `{ name, newValue, newValueDataType, field, selectedValues, selectedFields }`.
+
+Saved single and multiple fields are revalidated against `accepted-types` after field metadata resolves. Known incompatible paths report the selected field label/API path, actual Flow type, and required type. Unresolved legacy paths remain allowed.
 
 ### `c-flow-config-object-picker` — Salesforce object API-name selection
 

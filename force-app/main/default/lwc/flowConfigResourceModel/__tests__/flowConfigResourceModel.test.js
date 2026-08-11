@@ -1,5 +1,6 @@
 import {
   automaticOutputEntry,
+  buildResourceCompatibilityError,
   buildOutputItems,
   buildRecordBrowseStack,
   findNestedResource,
@@ -10,6 +11,52 @@ import {
 } from "c/flowConfigResourceModel";
 
 describe("flowConfigResourceModel", () => {
+  it("builds contextual compatibility errors from resolved metadata", () => {
+    expect(
+      buildResourceCompatibilityError(
+        {
+          label: "Text Variable",
+          dataType: "String",
+          isCollection: false
+        },
+        {
+          acceptedTypes: "Number",
+          collection: "exclude",
+          inputLabel: "Page Size",
+          allowLiteral: true
+        }
+      )
+    ).toBe(
+      "“Text Variable” has type Text. Page Size requires a single Number value. Select a Number resource or enter a numeric value."
+    );
+    expect(
+      buildResourceCompatibilityError(
+        {
+          label: "Amounts",
+          dataType: "Number",
+          isCollection: true
+        },
+        {
+          acceptedTypes: "Number",
+          collection: "exclude",
+          inputLabel: "Page Size"
+        }
+      )
+    ).toContain("has type Number collection");
+    expect(
+      buildResourceCompatibilityError(
+        { label: "Amount", dataType: "Number" },
+        { acceptedTypes: "Number", collection: "exclude" }
+      )
+    ).toBe("");
+    expect(
+      buildResourceCompatibilityError(
+        { label: "Unknown field", dataType: "Field reference" },
+        { acceptedTypes: "Number", collection: "exclude" }
+      )
+    ).toBe("");
+  });
+
   it("normalizes output types without component state", () => {
     expect(normalizeOutputType("Currency")).toBe("Number");
     expect(normalizeOutputType("Record")).toBe("SObject");

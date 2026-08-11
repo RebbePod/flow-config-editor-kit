@@ -40,6 +40,39 @@ describe("c-flow-config-value-input", () => {
     });
   });
 
+  it("rejects a partially numeric or nonnumeric literal with guidance", async () => {
+    const element = createElement("c-flow-config-value-input", {
+      is: FlowConfigValueInput
+    });
+    element.label = "Page Size";
+    element.propertyName = "pageSize";
+    element.valueType = "Number";
+    const handler = jest.fn();
+    element.addEventListener(
+      "configuration_editor_input_value_changed",
+      handler
+    );
+    document.body.appendChild(element);
+    await Promise.resolve();
+
+    const picker = element.shadowRoot.querySelector(
+      "c-flow-config-resource-picker"
+    );
+    const input = picker.shadowRoot.querySelector("lightning-input");
+    input.dispatchEvent(new CustomEvent("focus"));
+    input.dispatchEvent(
+      new CustomEvent("change", { detail: { value: "42 records" } })
+    );
+    await Promise.resolve();
+    picker.shadowRoot.querySelector("button.manual").click();
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(picker.validationMessage).toBe(
+      "Page Size requires a numeric value. Enter a number or select a Number resource."
+    );
+    expect(element.reportValidity()).toBe(false);
+  });
+
   it("uses one input for text literals and all scalar resource types", async () => {
     const element = createElement("c-flow-config-value-input", {
       is: FlowConfigValueInput
