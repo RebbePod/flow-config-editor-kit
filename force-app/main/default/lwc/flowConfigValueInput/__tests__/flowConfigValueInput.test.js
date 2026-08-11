@@ -73,7 +73,7 @@ describe("c-flow-config-value-input", () => {
     expect(element.reportValidity()).toBe(false);
   });
 
-  it("uses one input for text literals and all scalar resource types", async () => {
+  it("accepts Flow-compatible scalar resources for a Text input", async () => {
     const element = createElement("c-flow-config-value-input", {
       is: FlowConfigValueInput
     });
@@ -89,6 +89,9 @@ describe("c-flow-config-value-input", () => {
 
     const picker = element.shadowRoot.querySelector(
       "c-flow-config-resource-picker"
+    );
+    expect(picker.acceptedTypes).toBe(
+      "String,Number,Boolean,Date,DateTime,Time"
     );
     picker.shadowRoot
       .querySelector("lightning-input")
@@ -119,5 +122,25 @@ describe("c-flow-config-value-input", () => {
         "Global Variables"
       ])
     );
+  });
+
+  it("accepts a restored Number resource for a Text input", async () => {
+    const element = createElement("c-flow-config-value-input", {
+      is: FlowConfigValueInput
+    });
+    element.label = "Text Input";
+    element.propertyName = "textValue";
+    element.valueType = "String";
+    element.value = "{!Amount}";
+    element.valueDataType = "reference";
+    element.builderContext = {
+      variables: [{ name: "Amount", label: "Amount", dataType: "Number" }]
+    };
+    document.body.appendChild(element);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(element.reportValidity()).toBe(true);
+    expect(element.validationMessage).toBe("");
   });
 });

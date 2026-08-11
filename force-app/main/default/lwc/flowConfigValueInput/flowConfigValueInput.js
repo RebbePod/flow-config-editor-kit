@@ -1,5 +1,7 @@
 import { LightningElement, api } from "lwc";
 
+const TEXT_COMPATIBLE_TYPES = "String,Number,Boolean,Date,DateTime,Time";
+
 export default class FlowConfigValueInput extends LightningElement {
   @api label = "Value";
   @api propertyName;
@@ -17,8 +19,11 @@ export default class FlowConfigValueInput extends LightningElement {
   customValidityMessage = "";
 
   get acceptedTypes() {
-    // Flow permits most scalar resources to be coerced into Text.
-    return this.valueType === "String" ? "" : "Number";
+    // Flow automatically coerces primitive scalar resources, including
+    // Number resources, when they are assigned to a Text input.
+    return String(this.valueType).toLowerCase() === "string"
+      ? TEXT_COMPATIBLE_TYPES
+      : "Number";
   }
 
   handleValueChange(event) {

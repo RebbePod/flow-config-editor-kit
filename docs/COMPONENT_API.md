@@ -120,7 +120,7 @@ Events: `valuechange`, with `{ name, newValue, newValueDataType, resource }`.
 
 Public validation methods: `setCustomValidity(message)`, `reportValidity()`, and `validationMessage`.
 
-Committed and restored Flow references are validated against the expected scalar type. This includes manually pasted references that bypass the visible result filter. When metadata is available, an incompatible reference reports the resource label, its resolved type/cardinality, and the expected input shape. References with unresolved metadata remain allowed until Salesforce supplies their type.
+Committed and restored Flow references are validated against the expected scalar type. This includes manually pasted references that bypass the visible result filter. Text inputs accept Flow's compatible primitive scalar resources (`String`, `Number`, `Boolean`, `Date`, `DateTime`, and `Time`), including Number resources that Salesforce automatically converts to Text. Number inputs remain restricted to Number resources. When metadata is available, an incompatible reference reports the resource label, its resolved type/cardinality, and the expected input shape. References with unresolved metadata remain allowed until Salesforce supplies their type.
 
 Number literals must parse completely as finite numbers. Partially numeric text and nonnumeric values remain uncommitted and display guidance to enter a number or select a Number resource.
 
