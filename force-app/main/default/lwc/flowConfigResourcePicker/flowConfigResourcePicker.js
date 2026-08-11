@@ -1565,7 +1565,11 @@ export default class FlowConfigResourcePicker extends LightningElement {
   }
 
   requestAutomaticOutputRefresh() {
-    if (this.automaticOutputRefreshRequested || !this.propertyName) {
+    if (
+      this.automaticOutputRefreshRequested ||
+      !this.propertyName ||
+      (this.hasValue && !this.isReferenceValue)
+    ) {
       return;
     }
     this.automaticOutputRefreshRequested = true;

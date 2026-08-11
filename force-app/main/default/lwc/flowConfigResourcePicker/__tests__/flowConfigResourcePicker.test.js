@@ -225,6 +225,55 @@ describe("c-flow-config-resource-picker", () => {
     expect(element.reportValidity()).toBe(true);
   });
 
+  it("reopens an existing literal without refreshing Flow Builder", async () => {
+    const element = createElement("c-flow-config-resource-picker", {
+      is: FlowConfigResourcePicker
+    });
+    element.label = "Number Input";
+    element.propertyName = "numberValue";
+    element.acceptedTypes = "Number";
+    element.collection = "exclude";
+    element.allowLiteral = true;
+    element.literalType = "Number";
+    element.valueDataType = "Number";
+    element.value = 324;
+    const refreshHandler = jest.fn();
+    element.addEventListener("flowresourcerefresh", refreshHandler);
+    document.body.appendChild(element);
+
+    element.shadowRoot
+      .querySelector("lightning-input")
+      .dispatchEvent(new CustomEvent("focus"));
+    await flushPromises();
+
+    expect(refreshHandler).not.toHaveBeenCalled();
+    expect(element.shadowRoot.querySelector(".results")).not.toBeNull();
+    expect(element.shadowRoot.querySelector("lightning-input").value).toBe(
+      "324"
+    );
+  });
+
+  it("still requests refreshed Flow outputs for an empty input", async () => {
+    const element = createElement("c-flow-config-resource-picker", {
+      is: FlowConfigResourcePicker
+    });
+    element.propertyName = "numberValue";
+    element.acceptedTypes = "Number";
+    element.collection = "exclude";
+    element.allowLiteral = true;
+    element.literalType = "Number";
+    const refreshHandler = jest.fn();
+    element.addEventListener("flowresourcerefresh", refreshHandler);
+    document.body.appendChild(element);
+
+    element.shadowRoot
+      .querySelector("lightning-input")
+      .dispatchEvent(new CustomEvent("focus"));
+    await flushPromises();
+
+    expect(refreshHandler).toHaveBeenCalledTimes(1);
+  });
+
   it("distinguishes API and System containers from Custom Label values", async () => {
     const element = createElement("c-flow-config-resource-picker", {
       is: FlowConfigResourcePicker

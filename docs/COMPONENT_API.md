@@ -124,6 +124,8 @@ Committed and restored Flow references are validated against the expected scalar
 
 Number literals must parse completely as finite numbers. Partially numeric text and nonnumeric values remain uncommitted and display guidance to enter a number or select a Number resource.
 
+Reopening a committed literal does not request a state-neutral Flow configuration refresh, so the input and resource popover remain immediately editable. Empty inputs and committed resource references still request refreshed automatic outputs when opened.
+
 ## `c-flow-config-resource-picker`
 
 The lower-level Flow resource browser.
