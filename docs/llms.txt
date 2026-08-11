@@ -10,7 +10,7 @@ Unnamespaced package. Components resolve under the `c` namespace: `c/flowConfigE
 
 A Flow **screen component** (an LWC exposed to `lightning__FlowScreen`) can declare a **custom property editor** — another LWC that renders the configuration panel a Flow admin sees in Flow Builder.
 
-Flow Builder hands that editor four inputs and expects specific events back. This framework supplies both sides: a base class that owns the contract, and pickers that browse Flow resources, SObject fields, and Apex-defined types.
+Flow Builder hands that editor four inputs and expects specific events back. This framework supplies both sides: a base class that owns the contract, and pickers that browse Flow resources, Salesforce objects, SObject fields, and Apex-defined types.
 
 Two files are involved:
 
@@ -120,6 +120,9 @@ The editor's `.js-meta.xml`:
 | `allowManual`    | `SObject`  | Allow a hand-typed reference. Default `true`.                         |
 | `dependsOn`      | `field`    | Property supplying the object API name.                               |
 | `multiple`       | `field`    | Ordered multi-field selection, persisted as JSON.                     |
+| `sortable`       | `field`    | Show drag, position, and arrow controls in multiple mode. Selected rows and removal remain visible when false. Default `true`. |
+| `allowCustom`    | `field`    | Enable the field/resource header switch. Default `false`.             |
+| `customModeProperty` | `field` | Boolean Flow property used to persist the selected mode.              |
 | `acceptedTypes`  | `field`    | Comma-separated field types.                                          |
 
 Declaration order is render order.
@@ -225,11 +228,23 @@ Event `resourcechange` → `{ name, newValue, newValueDataType, resource }`.
 
 ### `c-flow-config-field-picker` — SObject field selection
 
-`label`, `property-name`, `object-api-name`, `value`, `multiple`, `accepted-types`, `max-results`, `max-relationship-depth` (default 5), `required`, `placeholder`, `field-level-help`.
+`label`, `property-name`, `object-api-name`, `value`, `multiple`, `sortable` (default `true`), `accepted-types`, `max-results`, `max-relationship-depth` (default 5), `required`, `placeholder`, `field-level-help`.
 
 Event `fieldchange` → `{ name, newValue, newValueDataType, field, selectedValues, selectedFields }`.
 
-All three expose `setCustomValidity(message)`, `reportValidity()`, `validationMessage`.
+### `c-flow-config-object-picker` — Salesforce object API-name selection
+
+`label`, `property-name`, `value`, `available-object-types` (comma-separated or array; empty/`All` = no allowlist), `queryable-only`, `show-all` (default false), `max-results` (scroll-loaded batch size, default 200), `required`, `placeholder`, `field-level-help`.
+
+Event `objectchange` → `{ name, newValue, newValueDataType, object, objectType }`. The selected API name is persisted as a Flow String. When `property-name` is supplied, selection and clearing also dispatch the standard Flow input-value event. The picker restores saved API names, groups standard and custom objects, and uses the shared picker popover and keyboard interaction. It initially shows user-facing standard, custom, and external objects. A root-level `Show all objects` switch reveals accessible feed/history/share/event/setting/internal objects and emits `filterchange` → `{ showAll }`. Reaching the bottom appends another `max-results` batch. Search and filter changes reset to the first batch. Missing-label markers fall back to API names.
+
+### `c-flow-config-field-input` — field or custom value
+
+Composes the field picker and scalar value input. Use it when a property normally selects a field from `object-api-name` but should optionally accept a custom literal or Flow resource. It accepts the field-picker attributes plus `value-data-type`, `builder-context`, `automatic-output-variables`, `api-version`, `allow-custom`, and controlled `custom-mode`.
+
+When enabled, a `Custom value` switch appears in the shared picker header at the root level and immediately opens the alternate picker when toggled. The switch is hidden at nested browse levels and returns at the root. Persist `custom-mode` in an optional Boolean Flow property when the choice must survive closing and reopening the editor. Event `modechange` → `{ customMode }`; event `valuechange` → the active input detail plus `customMode`.
+
+All picker inputs expose `setCustomValidity(message)`, `reportValidity()`, `validationMessage`.
 
 ---
 

@@ -36,6 +36,48 @@ describe("flowConfigPopoverUtils", () => {
     expect(positioned.style).toContain("top:180px");
   });
 
+  it("adds an actions panel above the normal results height when space permits", () => {
+    const positioned = positionAnchoredPopover({
+      anchor: elementWithRect({
+        left: 100,
+        top: 700,
+        bottom: 740,
+        width: 400
+      }),
+      popover: elementWithRect({ width: 0 }),
+      header: elementWithRect({ height: 36 }, 36),
+      scrollArea: elementWithRect({}, 500),
+      actions: elementWithRect({ height: 160 }, 160),
+      viewportWidth: 1000,
+      viewportHeight: 900
+    });
+
+    expect(positioned.state.openAbove).toBe(true);
+    expect(positioned.style).toContain("height:540px");
+    expect(positioned.style).toContain("top:156px");
+  });
+
+  it("still clamps an expanded actions panel to available viewport space", () => {
+    const positioned = positionAnchoredPopover({
+      anchor: elementWithRect({
+        left: 100,
+        top: 430,
+        bottom: 470,
+        width: 400
+      }),
+      popover: elementWithRect({ width: 0 }),
+      header: elementWithRect({ height: 36 }, 36),
+      scrollArea: elementWithRect({}, 500),
+      actions: elementWithRect({ height: 160 }, 160),
+      viewportWidth: 1000,
+      viewportHeight: 600
+    });
+
+    expect(positioned.state.openAbove).toBe(true);
+    expect(positioned.style).toContain("height:422px");
+    expect(positioned.style).toContain("top:8px");
+  });
+
   it("corrects fixed positioning inside a transformed Flow Builder panel", () => {
     const anchor = elementWithRect({
       left: 300,

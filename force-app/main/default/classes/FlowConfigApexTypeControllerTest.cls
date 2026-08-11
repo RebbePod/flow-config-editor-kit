@@ -104,6 +104,25 @@ private class FlowConfigApexTypeControllerTest {
   }
 
   @IsTest
+  static void describesAccessibleObjectsForPickers() {
+    Test.startTest();
+    List<FlowConfigApexTypeController.ObjectDescriptor> objects = FlowConfigApexTypeController.describeObjects();
+    Test.stopTest();
+
+    System.assert(!objects.isEmpty(), 'Expected accessible objects');
+    FlowConfigApexTypeController.ObjectDescriptor account;
+    for (FlowConfigApexTypeController.ObjectDescriptor descriptor : objects) {
+      if (descriptor.apiName == 'Account') {
+        account = descriptor;
+        break;
+      }
+    }
+    System.assertNotEquals(null, account);
+    System.assert(String.isNotBlank(account.label));
+    System.assertEquals(true, account.isQueryable);
+  }
+
+  @IsTest
   static void refusesApexSourceInspectionWithoutFlowAuthoring() {
     User restricted = buildUserWithoutFlowAuthoring();
 

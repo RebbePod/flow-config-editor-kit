@@ -24,6 +24,18 @@
         label="Multi-Field Record Type"
       />
             <property
+        name="directObjectApiName"
+        type="String"
+        label="Direct Object API Name"
+        role="inputOnly"
+      />
+            <property
+        name="directFieldApiName"
+        type="String"
+        label="Field from Direct Object"
+        role="inputOnly"
+      />
+            <property
         name="singleRecords"
         type="{TSingle[]}"
         label="Single-Field Records"

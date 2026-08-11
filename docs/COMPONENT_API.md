@@ -46,20 +46,23 @@ export default class MyEditor extends FlowConfigEditorBase {
 }
 ```
 
-| Key              | Applies to | Meaning                                                               |
-| ---------------- | ---------- | --------------------------------------------------------------------- |
-| `type`           | all        | `String`, `Number`, `SObject`, or `field`. Defaults to `String`.      |
-| `label`          | all        | Visible label. Defaults to a humanized property name.                 |
-| `required`       | all        | Reports `"<label> is required."` when empty.                          |
-| `helpText`       | all        | Help text beside the label.                                           |
-| `placeholder`    | all        | Empty-state text.                                                     |
-| `collection`     | `SObject`  | Restricts the picker to collections.                                  |
-| `genericType`    | `SObject`  | Generic SObject type name kept in step with the selection.            |
-| `objectProperty` | `SObject`  | Optional Flow String property mirroring the resolved object API name. |
-| `allowManual`    | `SObject`  | Allows a manually entered reference. Defaults to `true`.              |
-| `dependsOn`      | `field`    | Property supplying the object API name.                               |
-| `multiple`       | `field`    | Ordered multi-field selection.                                        |
-| `acceptedTypes`  | `field`    | Comma-separated field types.                                          |
+| Key                  | Applies to | Meaning                                                               |
+| -------------------- | ---------- | --------------------------------------------------------------------- |
+| `type`               | all        | `String`, `Number`, `SObject`, or `field`. Defaults to `String`.      |
+| `label`              | all        | Visible label. Defaults to a humanized property name.                 |
+| `required`           | all        | Reports `"<label> is required."` when empty.                          |
+| `helpText`           | all        | Help text beside the label.                                           |
+| `placeholder`        | all        | Empty-state text.                                                     |
+| `collection`         | `SObject`  | Restricts the picker to collections.                                  |
+| `genericType`        | `SObject`  | Generic SObject type name kept in step with the selection.            |
+| `objectProperty`     | `SObject`  | Optional Flow String property mirroring the resolved object API name. |
+| `allowManual`        | `SObject`  | Allows a manually entered reference. Defaults to `true`.              |
+| `dependsOn`          | `field`    | Property supplying the object API name.                               |
+| `multiple`           | `field`    | Ordered multi-field selection.                                        |
+| `sortable`           | `field`    | Shows ordering controls in multiple mode. Defaults to `true`.         |
+| `allowCustom`        | `field`    | Enables the field/resource mode switch. Defaults to `false`.          |
+| `customModeProperty` | `field`    | Optional Boolean Flow property that persists the selected mode.       |
+| `acceptedTypes`      | `field`    | Comma-separated field types.                                          |
 
 The schema is deliberately small. It covers scalars, record collections, and fields chosen from one of those collections. Anything it cannot express — reset notices, legacy property migration, conditional requiredness — drops to the imperative methods below, on the same class. Both layers compose: declare what fits and override `validateConfiguration()` or `configurationChanged()` for the rest.
 
@@ -149,29 +152,64 @@ When `property-name` is provided, selection and removal also dispatch the standa
 
 Searches fields for a known SObject and supports relationship traversal.
 
-| Attribute                | Type    | Default                  | Description                                                    |
-| ------------------------ | ------- | ------------------------ | -------------------------------------------------------------- |
-| `label`                  | String  | `Field`                  | Visible form label.                                            |
-| `property-name`          | String  | —                        | Flow String property used to persist the selection.            |
-| `object-api-name`        | String  | —                        | Root SObject API name. Disable the picker until this is known. |
-| `value`                  | String  | —                        | Field path, or a JSON array of paths in multiple mode.         |
-| `multiple`               | Boolean | `false`                  | Enables ordered multi-field selection.                         |
-| `accepted-types`         | String  | empty                    | Comma-separated field types; empty accepts all.                |
-| `max-results`            | Number  | `100`                    | Maximum results at one level.                                  |
-| `max-relationship-depth` | Number  | `5`                      | Maximum relationship traversal depth.                          |
-| `required`               | Boolean | `false`                  | Enables required validation.                                   |
-| `placeholder`            | String  | field-search placeholder | Empty-state text.                                              |
-| `field-level-help`       | String  | —                        | Help text.                                                     |
+| Attribute                | Type    | Default                  | Description                                                                                                     |
+| ------------------------ | ------- | ------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `label`                  | String  | `Field`                  | Visible form label.                                                                                             |
+| `property-name`          | String  | —                        | Flow String property used to persist the selection.                                                             |
+| `object-api-name`        | String  | —                        | Root SObject API name. Disable the picker until this is known.                                                  |
+| `value`                  | String  | —                        | Field path, or a JSON array of paths in multiple mode.                                                          |
+| `multiple`               | Boolean | `false`                  | Enables ordered multi-field selection.                                                                          |
+| `sortable`               | Boolean | `true`                   | Shows drag, position, and arrow controls in multiple mode. Selected rows and removal remain visible when false. |
+| `accepted-types`         | String  | empty                    | Comma-separated field types; empty accepts all.                                                                 |
+| `max-results`            | Number  | `100`                    | Maximum results at one level.                                                                                   |
+| `max-relationship-depth` | Number  | `5`                      | Maximum relationship traversal depth.                                                                           |
+| `required`               | Boolean | `false`                  | Enables required validation.                                                                                    |
+| `placeholder`            | String  | field-search placeholder | Empty-state text.                                                                                               |
+| `field-level-help`       | String  | —                        | Help text.                                                                                                      |
 
 Events: `fieldchange`, with `{ name, newValue, newValueDataType, field, selectedValues, selectedFields }`.
 
-In multiple mode, `newValue` is a JSON string so it can be stored in a Flow String property. `selectedValues` is an ordered array for immediate editor use.
+In multiple mode, `newValue` is a JSON string so it can be stored in a Flow String property. `selectedValues` preserves selection order for immediate editor use. Set `sortable=false` when order has no business meaning and the picker should behave as a simple multi-select dropdown.
+
+The selected-fields panel is additive to the normal results-popover height when viewport space permits. On constrained screens, the combined popover is clamped to the available space and the selected panel and results retain their own scrolling regions.
+
+## `c-flow-config-object-picker`
+
+Searches accessible Salesforce objects and persists the selected object API name as a Flow String. It uses the same selected pill, searchable grouped popover, keyboard behavior, shared header, and viewport-aware placement as the resource and field pickers. Saved API names remain visible even if their metadata cannot currently be loaded.
+
+| Attribute                | Type         | Default                   | Description                                                      |
+| ------------------------ | ------------ | ------------------------- | ---------------------------------------------------------------- |
+| `label`                  | String       | `Object`                  | Visible form label.                                              |
+| `property-name`          | String       | —                         | Flow String property used to persist the object API name.        |
+| `value`                  | String       | —                         | Current object API name, such as `Account` or `Invoice__c`.      |
+| `available-object-types` | String/Array | empty                     | Optional API-name allowlist; empty or `All` accepts all objects. |
+| `queryable-only`         | Boolean      | `false`                   | Excludes objects that cannot be queried.                         |
+| `show-all`               | Boolean      | `false`                   | Initially includes specialized accessible objects when true.     |
+| `max-results`            | Number       | `200`                     | Number of matching objects rendered per scroll-loaded batch.     |
+| `required`               | Boolean      | `false`                   | Enables required validation.                                     |
+| `placeholder`            | String       | object-search placeholder | Empty-state text.                                                |
+| `field-level-help`       | String       | —                         | Help text.                                                       |
+
+Event `objectchange` returns `{ name, newValue, newValueDataType, object, objectType }`. `object` is the selected descriptor and `objectType` mirrors `newValue` for consumers that coordinate generic SObject mappings. Selection and removal also dispatch the standard Flow input-value event when `property-name` is set. The root-level `Show all objects` switch updates the local filter and emits `filterchange` with `{ showAll }`.
+
+By default, the picker shows user-facing standard objects plus custom and external objects. Feed, history, share, platform-event, custom-setting, and other internal read-only metadata remains available through `Show all objects`. Discovery is cacheable and respects object accessibility. Descriptors include API name, singular/plural labels, custom/queryable/searchable/custom-setting flags, and create/update/delete capabilities so consumers can filter without another metadata request. Unusable Salesforce missing-label markers fall back to the API name.
+
+The object list loads in batches. Reaching the bottom of the results panel appends the next `max-results` matches, while changing the search or object filter restarts from the first batch.
+
+## `c-flow-config-field-input`
+
+Composes `flowConfigFieldPicker` and `flowConfigValueInput` for properties that normally select an SObject field but may deliberately use a custom literal or Flow resource. It accepts the field picker's attributes plus `value-data-type`, `builder-context`, `automatic-output-variables`, `api-version`, `allow-custom`, and controlled `custom-mode`.
+
+When enabled, an accessible `Custom value` switch is rendered in the shared picker header beside the breadcrumbs at the root level. It is hidden while browsing nested relationships or resources and returns after navigating back to the root. Switching replaces the field browser with the standard Flow resource/literal picker and opens it immediately. `custom-mode` is controlled so a consuming editor can persist the user's choice in its own optional Boolean Flow property. Switching modes does not clear or rewrite the current value. Event `modechange` returns `{ customMode }`; event `valuechange` returns the active child's standard value detail plus `customMode`.
+
+Public validation methods: `setCustomValidity(message)`, `reportValidity()`, and `validationMessage`.
 
 ## Shared utility modules
 
 - `flowConfigEditorBase`: the editor base class documented above.
 - `flowConfigEditorUtils`: Flow event creation, value parsing, resource collection, type normalization, labels, and icon selection.
 - `flowConfigResourceModel`: resource filtering, grouping, search, and reference lookup.
+- `flowConfigObjectModel`: object-label normalization and default/all-object filtering.
 - `flowConfigSchemaService`: cached SObject path descriptions.
 - `flowConfigMetadataService`: cached Apex-defined and hierarchy-setting metadata.
 - `flowConfigGenericTypeCoordinator`: pure state planning for collection/type changes.

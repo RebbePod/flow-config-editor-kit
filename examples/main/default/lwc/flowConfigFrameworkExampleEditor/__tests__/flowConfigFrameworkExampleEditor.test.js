@@ -16,6 +16,11 @@ jest.mock(
   () => ({ __esModule: true, default: jest.fn() }),
   { virtual: true }
 );
+jest.mock(
+  "@salesforce/apex/FlowConfigApexTypeController.describeObjects",
+  () => ({ __esModule: true, default: jest.fn().mockResolvedValue([]) }),
+  { virtual: true }
+);
 
 describe("c-flow-config-framework-example-editor", () => {
   afterEach(() => {
@@ -73,6 +78,100 @@ describe("c-flow-config-framework-example-editor", () => {
       element.shadowRoot.querySelector('[data-property="multipleRecords"]')
         .required
     ).toBe(false);
+  });
+
+  it("restores and connects the direct object and field picker example", () => {
+    const element = createElement("c-flow-config-framework-example-editor", {
+      is: FlowConfigFrameworkExampleEditor
+    });
+    element.genericTypeMappings = [
+      { typeName: "TSingle", typeValue: "Contact" }
+    ];
+    element.inputVariables = [
+      {
+        name: "singleRecords",
+        value: "{!Get_Contacts}",
+        valueDataType: "reference"
+      },
+      {
+        name: "directObjectApiName",
+        value: "Account",
+        valueDataType: "String"
+      },
+      {
+        name: "directFieldApiName",
+        value: "Name",
+        valueDataType: "String"
+      }
+    ];
+    document.body.appendChild(element);
+
+    const objectPicker = element.shadowRoot.querySelector(
+      '[data-property="directObjectApiName"]'
+    );
+    const fieldPicker = element.shadowRoot.querySelector(
+      '[data-property="directFieldApiName"]'
+    );
+    expect(objectPicker.value).toBe("Account");
+    expect(objectPicker.queryableOnly).toBe(true);
+    expect(fieldPicker.value).toBe("Name");
+    expect(fieldPicker.objectApiName).toBe("Account");
+  });
+
+  it("clears a direct field when its selected object changes", async () => {
+    const element = createElement("c-flow-config-framework-example-editor", {
+      is: FlowConfigFrameworkExampleEditor
+    });
+    element.genericTypeMappings = [
+      { typeName: "TSingle", typeValue: "Contact" }
+    ];
+    element.inputVariables = [
+      {
+        name: "singleRecords",
+        value: "{!Get_Contacts}",
+        valueDataType: "reference"
+      },
+      {
+        name: "directObjectApiName",
+        value: "Account",
+        valueDataType: "String"
+      },
+      {
+        name: "directFieldApiName",
+        value: "Name",
+        valueDataType: "String"
+      }
+    ];
+    const inputHandler = jest.fn();
+    element.addEventListener(
+      "configuration_editor_input_value_changed",
+      inputHandler
+    );
+    document.body.appendChild(element);
+
+    element.shadowRoot
+      .querySelector('[data-property="directObjectApiName"]')
+      .dispatchEvent(
+        new CustomEvent("objectchange", {
+          detail: { newValue: "Contact", objectType: "Contact" }
+        })
+      );
+    await flushPromises();
+
+    expect(
+      element.shadowRoot.querySelector('[data-property="directFieldApiName"]')
+        .objectApiName
+    ).toBe("Contact");
+    expect(
+      inputHandler.mock.calls.map((call) => call[0].detail)
+    ).toContainEqual({
+      name: "directFieldApiName",
+      newValue: null,
+      newValueDataType: "String"
+    });
+    expect(
+      element.shadowRoot.querySelector(".field-reset-notice").textContent
+    ).toContain("direct object changed");
   });
 
   it("returns the picker's specific error for an unsupported global field", async () => {
@@ -242,7 +341,7 @@ describe("c-flow-config-framework-example-editor", () => {
     ).toContain("Field selection reset because the record type changed");
     expect(
       element.shadowRoot.querySelectorAll(".dependent-field")
-    ).toHaveLength(2);
+    ).toHaveLength(3);
   });
 
   it("clears stale field state when a pasted collection type cannot be resolved", async () => {

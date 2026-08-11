@@ -8,6 +8,14 @@ const SCHEMA = normalizeSchema({
   heading: { type: "String", label: "Heading" }
 });
 
+const CUSTOM_SCHEMA = normalizeSchema({
+  chosen: {
+    type: "field",
+    allowCustom: true,
+    customModeProperty: "chosenIsCustom"
+  }
+});
+
 function buildForm(overrides = {}) {
   const element = createElement("c-flow-config-editor-form", {
     is: FlowConfigEditorForm
@@ -145,5 +153,29 @@ describe("c-flow-config-editor-form", () => {
   it("tolerates being asked for validity with no errors at all", () => {
     const element = buildForm();
     expect(element.collectValidity(undefined)).toEqual([]);
+  });
+
+  it("renders the optional field-or-custom wrapper and persists mode changes", () => {
+    const element = buildForm({
+      schema: CUSTOM_SCHEMA,
+      values: { chosenIsCustom: true },
+      objectTypes: { chosen: "Account" }
+    });
+    const handler = jest.fn();
+    element.addEventListener("configchange", handler);
+
+    const chosen = control(element, "chosen");
+    expect(chosen.tagName).toBe("C-FLOW-CONFIG-FIELD-INPUT");
+    expect(chosen.customMode).toBe(true);
+    chosen.dispatchEvent(
+      new CustomEvent("modechange", { detail: { customMode: false } })
+    );
+
+    expect(handler.mock.calls[0][0].detail).toEqual({
+      name: "chosenIsCustom",
+      newValue: false,
+      newValueDataType: "Boolean",
+      modeFor: "chosen"
+    });
   });
 });

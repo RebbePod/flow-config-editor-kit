@@ -1,7 +1,10 @@
 import describeSObjectPath from "@salesforce/apex/FlowConfigApexTypeController.describeSObjectPath";
+import describeObjects from "@salesforce/apex/FlowConfigApexTypeController.describeObjects";
 import {
+  clearObjectCache,
   clearRecordPathCache,
-  describeRecordPath
+  describeRecordPath,
+  listObjects
 } from "c/flowConfigSchemaService";
 
 jest.mock(
@@ -10,9 +13,16 @@ jest.mock(
   { virtual: true }
 );
 
+jest.mock(
+  "@salesforce/apex/FlowConfigApexTypeController.describeObjects",
+  () => ({ __esModule: true, default: jest.fn() }),
+  { virtual: true }
+);
+
 describe("flowConfigSchemaService", () => {
   afterEach(() => {
     clearRecordPathCache();
+    clearObjectCache();
     jest.clearAllMocks();
   });
 
@@ -47,5 +57,29 @@ describe("flowConfigSchemaService", () => {
       name: "Name"
     });
     expect(describeSObjectPath).toHaveBeenCalledTimes(2);
+  });
+
+  it("shares and normalizes object discovery", async () => {
+    describeObjects.mockResolvedValueOnce(
+      JSON.stringify([{ apiName: "Account", label: "Account" }, null])
+    );
+
+    const first = listObjects();
+    const second = listObjects();
+
+    await expect(first).resolves.toEqual([
+      { apiName: "Account", label: "Account" }
+    ]);
+    await expect(second).resolves.toHaveLength(1);
+    expect(describeObjects).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows object discovery to retry after failure", async () => {
+    describeObjects
+      .mockRejectedValueOnce(new Error("temporary failure"))
+      .mockResolvedValueOnce([{ apiName: "Contact" }]);
+
+    await expect(listObjects()).rejects.toThrow("temporary failure");
+    await expect(listObjects()).resolves.toEqual([{ apiName: "Contact" }]);
   });
 });

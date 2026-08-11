@@ -80,14 +80,18 @@
           items={breadcrumbItems}
           location-label="Field location"
           close-label="Close results"
+          mode-toggle-label={effectiveModeToggleLabel}
+          mode-toggle-checked={modeToggleChecked}
           onnavigate={handleBreadcrumb}
           onclose={handleClose}
         ></c-flow-config-picker-header>
-        <template lwc:if={showOrdering}>
-          <section class="selected-fields" aria-label="Selected field order">
+        <template lwc:if={showSelectedFields}>
+          <section class="selected-fields" aria-label="Selected fields">
             <div class="selected-fields__heading">
               <span>Selected fields</span>
-              <span class="selected-fields__hint">Drag or use arrows</span>
+              <template lwc:if={showOrderingControls}>
+                <span class="selected-fields__hint">Drag or use arrows</span>
+              </template>
             </div>
             <ol class="selected-fields__list">
               <template for:each={orderedFields} for:item="field">
@@ -98,24 +102,28 @@
                   ondragover={handleOrderDragOver}
                   ondrop={handleOrderDrop}
                 >
-                  <button
-                    class={field.dragClass}
-                    type="button"
-                    draggable={field.isDraggable}
-                    aria-label={field.dragLabel}
-                    title={field.dragLabel}
-                    data-index={field.index}
-                    ondragstart={handleOrderDragStart}
-                    ondragend={handleOrderDragEnd}
-                    onkeydown={handleDragHandleKeydown}
-                  >
-                    <lightning-icon
-                      icon-name="utility:drag_and_drop"
-                      size="xx-small"
-                      alternative-text=""
-                    ></lightning-icon>
-                  </button>
-                  <span class="selected-field__position">{field.position}</span>
+                  <template lwc:if={showOrderingControls}>
+                    <button
+                      class={field.dragClass}
+                      type="button"
+                      draggable={field.isDraggable}
+                      aria-label={field.dragLabel}
+                      title={field.dragLabel}
+                      data-index={field.index}
+                      ondragstart={handleOrderDragStart}
+                      ondragend={handleOrderDragEnd}
+                      onkeydown={handleDragHandleKeydown}
+                    >
+                      <lightning-icon
+                        icon-name="utility:drag_and_drop"
+                        size="xx-small"
+                        alternative-text=""
+                      ></lightning-icon>
+                    </button>
+                    <span class="selected-field__position"
+                      >{field.position}</span
+                    >
+                  </template>
                   <lightning-icon
                     class="selected-field__icon"
                     icon-name={field.iconName}
@@ -127,36 +135,38 @@
                     <span class="selected-field__api">{field.apiName}</span>
                   </span>
                   <span class="selected-field__actions">
-                    <button
-                      class="order-action"
-                      type="button"
-                      title="Move field up"
-                      aria-label={field.moveUpLabel}
-                      data-index={field.index}
-                      disabled={field.isFirst}
-                      onclick={handleMoveUp}
-                    >
-                      <lightning-icon
-                        icon-name="utility:chevronup"
-                        size="xx-small"
-                        alternative-text=""
-                      ></lightning-icon>
-                    </button>
-                    <button
-                      class="order-action"
-                      type="button"
-                      title="Move field down"
-                      aria-label={field.moveDownLabel}
-                      data-index={field.index}
-                      disabled={field.isLast}
-                      onclick={handleMoveDown}
-                    >
-                      <lightning-icon
-                        icon-name="utility:chevrondown"
-                        size="xx-small"
-                        alternative-text=""
-                      ></lightning-icon>
-                    </button>
+                    <template lwc:if={showOrderingControls}>
+                      <button
+                        class="order-action"
+                        type="button"
+                        title="Move field up"
+                        aria-label={field.moveUpLabel}
+                        data-index={field.index}
+                        disabled={field.isFirst}
+                        onclick={handleMoveUp}
+                      >
+                        <lightning-icon
+                          icon-name="utility:chevronup"
+                          size="xx-small"
+                          alternative-text=""
+                        ></lightning-icon>
+                      </button>
+                      <button
+                        class="order-action"
+                        type="button"
+                        title="Move field down"
+                        aria-label={field.moveDownLabel}
+                        data-index={field.index}
+                        disabled={field.isLast}
+                        onclick={handleMoveDown}
+                      >
+                        <lightning-icon
+                          icon-name="utility:chevrondown"
+                          size="xx-small"
+                          alternative-text=""
+                        ></lightning-icon>
+                      </button>
+                    </template>
                     <button
                       class="order-action order-action--remove"
                       type="button"
@@ -175,9 +185,11 @@
                 </li>
               </template>
             </ol>
-            <span class="slds-assistive-text" aria-live="polite"
-              >{reorderAnnouncement}</span
-            >
+            <template lwc:if={showOrderingControls}>
+              <span class="slds-assistive-text" aria-live="polite"
+                >{reorderAnnouncement}</span
+              >
+            </template>
           </section>
         </template>
         <div class="results__scroll">

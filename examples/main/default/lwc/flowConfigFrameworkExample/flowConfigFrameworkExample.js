@@ -1,6 +1,8 @@
 import { LightningElement, api } from "lwc";
 
 export default class FlowConfigFrameworkExample extends LightningElement {
+  @api directObjectApiName;
+  @api directFieldApiName;
   @api records = [];
   @api objectApiName;
   @api singleRecords = [];
