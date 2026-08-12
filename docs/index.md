@@ -8,9 +8,9 @@ home: true
 <section class="hero">
   <div class="hero__copy">
     <p class="eyebrow">Salesforce Flow developer framework</p>
-    <h1>Build better Flow configuration panels.</h1>
+    <h1><span>Build better</span><span>Flow configuration</span><span>panels.</span></h1>
     <p class="hero__lede">Reusable Lightning Web Components for resource, value, object, and field selection—complete with Flow Builder events, validation, metadata discovery, and accessible picker behavior.</p>
-    <div class="button-row">
+    <div class="button-row hero__actions">
       <a class="button button--primary" href="{{ '/GETTING_STARTED/' | relative_url }}">Get started</a>
       <a class="button button--secondary" href="{{ '/COMPONENT_API/' | relative_url }}">Browse components</a>
     </div>
