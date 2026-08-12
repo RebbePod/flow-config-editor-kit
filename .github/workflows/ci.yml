@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: npm install --global @salesforce/cli
@@ -67,7 +67,7 @@ jobs:
             echo "::notice::DEVHUB_SFDX_URL is not set; skipping org validation."
           fi
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         if: steps.creds.outputs.available == 'true'
         with:
           node-version: 22
