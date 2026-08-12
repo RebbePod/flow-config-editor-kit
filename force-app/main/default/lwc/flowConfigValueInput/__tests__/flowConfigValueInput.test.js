@@ -1,8 +1,14 @@
 import { createElement } from "lwc";
 import FlowConfigValueInput from "c/flowConfigValueInput";
+import { installImmediateAnimationFrames } from "../../../../../../test-utils/pickerTestUtils";
 
 describe("c-flow-config-value-input", () => {
+  beforeEach(() => {
+    installImmediateAnimationFrames();
+  });
+
   afterEach(() => {
+    jest.restoreAllMocks();
     while (document.body.firstChild) {
       document.body.removeChild(document.body.firstChild);
     }
@@ -40,7 +46,40 @@ describe("c-flow-config-value-input", () => {
     });
   });
 
-  it("uses one input for text literals and all scalar resource types", async () => {
+  it("rejects a partially numeric or nonnumeric literal with guidance", async () => {
+    const element = createElement("c-flow-config-value-input", {
+      is: FlowConfigValueInput
+    });
+    element.label = "Page Size";
+    element.propertyName = "pageSize";
+    element.valueType = "Number";
+    const handler = jest.fn();
+    element.addEventListener(
+      "configuration_editor_input_value_changed",
+      handler
+    );
+    document.body.appendChild(element);
+    await Promise.resolve();
+
+    const picker = element.shadowRoot.querySelector(
+      "c-flow-config-resource-picker"
+    );
+    const input = picker.shadowRoot.querySelector("lightning-input");
+    input.dispatchEvent(new CustomEvent("focus"));
+    input.dispatchEvent(
+      new CustomEvent("change", { detail: { value: "42 records" } })
+    );
+    await Promise.resolve();
+    picker.shadowRoot.querySelector("button.manual").click();
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(picker.validationMessage).toBe(
+      "Page Size requires a numeric value. Enter a number or select a Number resource."
+    );
+    expect(element.reportValidity()).toBe(false);
+  });
+
+  it("accepts Flow-compatible scalar resources for a Text input", async () => {
     const element = createElement("c-flow-config-value-input", {
       is: FlowConfigValueInput
     });
@@ -56,6 +95,9 @@ describe("c-flow-config-value-input", () => {
 
     const picker = element.shadowRoot.querySelector(
       "c-flow-config-resource-picker"
+    );
+    expect(picker.acceptedTypes).toBe(
+      "String,Number,Boolean,Date,DateTime,Time"
     );
     picker.shadowRoot
       .querySelector("lightning-input")
@@ -86,5 +128,25 @@ describe("c-flow-config-value-input", () => {
         "Global Variables"
       ])
     );
+  });
+
+  it("accepts a restored Number resource for a Text input", async () => {
+    const element = createElement("c-flow-config-value-input", {
+      is: FlowConfigValueInput
+    });
+    element.label = "Text Input";
+    element.propertyName = "textValue";
+    element.valueType = "String";
+    element.value = "{!Amount}";
+    element.valueDataType = "reference";
+    element.builderContext = {
+      variables: [{ name: "Amount", label: "Amount", dataType: "Number" }]
+    };
+    document.body.appendChild(element);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(element.reportValidity()).toBe(true);
+    expect(element.validationMessage).toBe("");
   });
 });

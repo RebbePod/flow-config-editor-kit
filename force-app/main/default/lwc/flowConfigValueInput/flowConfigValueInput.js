@@ -1,4 +1,5 @@
 import { LightningElement, api } from "lwc";
+import { compatibleResourceTypesForInput } from "c/flowConfigResourceModel";
 
 export default class FlowConfigValueInput extends LightningElement {
   @api label = "Value";
@@ -17,8 +18,7 @@ export default class FlowConfigValueInput extends LightningElement {
   customValidityMessage = "";
 
   get acceptedTypes() {
-    // Flow permits most scalar resources to be coerced into Text.
-    return this.valueType === "String" ? "" : "Number";
+    return compatibleResourceTypesForInput(this.valueType);
   }
 
   handleValueChange(event) {

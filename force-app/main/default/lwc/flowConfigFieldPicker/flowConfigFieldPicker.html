@@ -89,9 +89,24 @@
           <section class="selected-fields" aria-label="Selected fields">
             <div class="selected-fields__heading">
               <span>Selected fields</span>
-              <template lwc:if={showOrderingControls}>
-                <span class="selected-fields__hint">Drag or use arrows</span>
-              </template>
+              <span class="selected-fields__actions">
+                <template lwc:if={showOrderingControls}>
+                  <span class="selected-fields__hint">Drag or use arrows</span>
+                </template>
+                <button
+                  class="selected-fields__clear"
+                  type="button"
+                  title="Clear all selected fields"
+                  aria-label="Clear all selected fields"
+                  onclick={handleClearAll}
+                >
+                  <lightning-icon
+                    icon-name="utility:close"
+                    size="xx-small"
+                    alternative-text=""
+                  ></lightning-icon>
+                </button>
+              </span>
             </div>
             <ol class="selected-fields__list">
               <template for:each={orderedFields} for:item="field">
@@ -192,7 +207,10 @@
             </template>
           </section>
         </template>
-        <div class="results__scroll">
+        <div class="results__scroll" onscroll={handleResultsScroll}>
+          <template lwc:if={showResultsLoading}>
+            <p class="results__empty" role="status">Loading fields…</p>
+          </template>
           <template lwc:if={hasRelationships}>
             <section class="field-group">
               <h3 class="field-group__title">Relationship Fields</h3>
@@ -274,19 +292,10 @@
           <template lwc:if={showNoResults}>
             <p class="results__empty">{noResultsMessage}</p>
           </template>
-          <template lwc:if={hasValue}>
+          <template lwc:if={showRemoveAction}>
             <button class="remove" type="button" onclick={handleClear}>
               {removeLabel}
             </button>
-          </template>
-          <template lwc:if={multiple}>
-            <div class="results__footer">
-              <lightning-button
-                label="Done"
-                variant="brand"
-                onclick={handleDone}
-              ></lightning-button>
-            </div>
           </template>
         </div>
       </section>

@@ -2,6 +2,7 @@ import { createElement } from "lwc";
 import describeObjects from "@salesforce/apex/FlowConfigApexTypeController.describeObjects";
 import FlowConfigObjectPicker from "c/flowConfigObjectPicker";
 import { clearObjectCache } from "c/flowConfigSchemaService";
+import { installImmediateAnimationFrames } from "../../../../../../test-utils/pickerTestUtils";
 
 jest.mock(
   "@salesforce/apex/FlowConfigApexTypeController.describeObjects",
@@ -68,7 +69,12 @@ function searchInput(element) {
 }
 
 describe("flowConfigObjectPicker", () => {
+  beforeEach(() => {
+    installImmediateAnimationFrames();
+  });
+
   afterEach(() => {
+    jest.restoreAllMocks();
     while (document.body.firstChild) {
       document.body.removeChild(document.body.firstChild);
     }

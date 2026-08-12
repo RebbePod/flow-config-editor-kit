@@ -1,6 +1,7 @@
 import { createElement } from "lwc";
 import { getObjectInfo } from "lightning/uiObjectInfoApi";
 import FlowConfigFrameworkExampleEditor from "c/flowConfigFrameworkExampleEditor";
+import { installImmediateAnimationFrames } from "../../../../../../test-utils/pickerTestUtils";
 
 function flushPromises() {
   return Promise.resolve();
@@ -23,7 +24,12 @@ jest.mock(
 );
 
 describe("c-flow-config-framework-example-editor", () => {
+  beforeEach(() => {
+    installImmediateAnimationFrames();
+  });
+
   afterEach(() => {
+    jest.restoreAllMocks();
     while (document.body.firstChild) {
       document.body.removeChild(document.body.firstChild);
     }

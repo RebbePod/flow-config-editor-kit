@@ -120,6 +120,16 @@ Events: `valuechange`, with `{ name, newValue, newValueDataType, resource }`.
 
 Public validation methods: `setCustomValidity(message)`, `reportValidity()`, and `validationMessage`.
 
+Committed and restored Flow references are validated against the expected scalar type. This includes manually pasted references that bypass the visible result filter. Text inputs accept Flow's compatible primitive scalar resources (`String`, `Number`, `Boolean`, `Date`, `DateTime`, and `Time`), including Number resources that Salesforce automatically converts to Text. Number inputs remain restricted to Number resources. When metadata is available, an incompatible reference reports the resource label, its resolved type/cardinality, and the expected input shape. References with unresolved metadata remain allowed until Salesforce supplies their type.
+
+Number literals must parse completely as finite numbers. Partially numeric text and nonnumeric values remain uncommitted and display guidance to enter a number or select a Number resource.
+
+Reopening a committed literal does not request a state-neutral Flow configuration refresh, so the input and resource popover remain immediately editable. Empty inputs and committed resource references still request refreshed automatic outputs when opened.
+
+Opening is progressive: the positioned popover shell renders first with a loading state, then root resource discovery and filtering begin after that initial paint. Automatic-output refresh and optional hierarchy-setting prefetch also begin after the shell is visible. Nested metadata loading continues inside the already-visible popover.
+
+Resource searches include screen fields plus automatic action, Apex action, and subflow outputs. A container is shown only when its own label matches; when only a nested output matches, that output is shown directly with its parent path. Unmatched screen and automatic-output trees are skipped before they are built.
+
 ## `c-flow-config-resource-picker`
 
 The lower-level Flow resource browser.
@@ -139,7 +149,7 @@ The lower-level Flow resource browser.
 | `allow-literal`              | Boolean | `false`              | Allows non-reference literal text.                                      |
 | `allow-record-fields`        | Boolean | `false`              | Enables traversal from record resources into fields.                    |
 | `literal-type`               | String  | `String`             | Data type assigned to literal values.                                   |
-| `max-results`                | Number  | `100`                | Maximum search results.                                                 |
+| `max-results`                | Number  | `100`                | Root scroll-batch size and nested-level result limit.                   |
 | `required`                   | Boolean | `false`              | Enables required validation.                                            |
 | `placeholder`                | String  | standard placeholder | Empty-state text.                                                       |
 | `field-level-help`           | String  | —                    | Help text.                                                              |
@@ -147,6 +157,10 @@ The lower-level Flow resource browser.
 Events: `resourcechange`, with `{ name, newValue, newValueDataType, resource }`.
 
 When `property-name` is provided, selection and removal also dispatch the standard `configuration_editor_input_value_changed` event expected by Flow Builder. Removal uses the same event with a `null` value, which is how Flow Builder's custom property editor contract clears an input assignment.
+
+The popover shell paints before root resource derivation. Root results append another `max-results` batch when the results panel reaches the bottom; changing the query resets the visible batch.
+
+`reportValidity()` applies the same `accepted-types` and `collection` compatibility rules to committed, restored, and manually pasted references that the browser applies while filtering results. Known incompatible references return `false` and display a contextual error. References whose metadata cannot yet be resolved are not rejected speculatively.
 
 ## `c-flow-config-field-picker`
 
@@ -161,7 +175,7 @@ Searches fields for a known SObject and supports relationship traversal.
 | `multiple`               | Boolean | `false`                  | Enables ordered multi-field selection.                                                                          |
 | `sortable`               | Boolean | `true`                   | Shows drag, position, and arrow controls in multiple mode. Selected rows and removal remain visible when false. |
 | `accepted-types`         | String  | empty                    | Comma-separated field types; empty accepts all.                                                                 |
-| `max-results`            | Number  | `100`                    | Maximum results at one level.                                                                                   |
+| `max-results`            | Number  | `100`                    | Field results appended per scroll-loaded batch at one relationship level.                                       |
 | `max-relationship-depth` | Number  | `5`                      | Maximum relationship traversal depth.                                                                           |
 | `required`               | Boolean | `false`                  | Enables required validation.                                                                                    |
 | `placeholder`            | String  | field-search placeholder | Empty-state text.                                                                                               |
@@ -172,6 +186,12 @@ Events: `fieldchange`, with `{ name, newValue, newValueDataType, field, selected
 In multiple mode, `newValue` is a JSON string so it can be stored in a Flow String property. `selectedValues` preserves selection order for immediate editor use. Set `sortable=false` when order has no business meaning and the picker should behave as a simple multi-select dropdown.
 
 The selected-fields panel is additive to the normal results-popover height when viewport space permits. On constrained screens, the combined popover is clamped to the available space and the selected panel and results retain their own scrolling regions.
+
+In multiple mode, a compact icon-only X in the selected-fields heading clears the complete selection while leaving the picker open. Each selected row retains its own remove action. The picker closes through its header X, outside click, or Escape; it does not render a separate Done footer.
+
+Saved single and multiple selections are revalidated against `accepted-types` after their field metadata loads. A known incompatible field returns `false` from `reportValidity()` and displays its label, API path, actual Flow type, and required type. Unresolved legacy field paths remain usable rather than being rejected without metadata.
+
+The popover shell paints before field view-model derivation. Reaching the bottom appends another `max-results` field batch; changing the query or relationship level resets the batch.
 
 ## `c-flow-config-object-picker`
 
@@ -194,7 +214,7 @@ Event `objectchange` returns `{ name, newValue, newValueDataType, object, object
 
 By default, the picker shows user-facing standard objects plus custom and external objects. Feed, history, share, platform-event, custom-setting, and other internal read-only metadata remains available through `Show all objects`. Discovery is cacheable and respects object accessibility. Descriptors include API name, singular/plural labels, custom/queryable/searchable/custom-setting flags, and create/update/delete capabilities so consumers can filter without another metadata request. Unusable Salesforce missing-label markers fall back to the API name.
 
-The object list loads in batches. Reaching the bottom of the results panel appends the next `max-results` matches, while changing the search or object filter restarts from the first batch.
+The object popover shell paints before its prepared object index is filtered. Reaching the bottom of the results panel appends the next `max-results` matches, while changing the search or object filter restarts from the first batch.
 
 ## `c-flow-config-field-input`
 

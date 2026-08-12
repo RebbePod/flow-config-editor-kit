@@ -9,11 +9,11 @@ import {
   relationshipTargetsForField
 } from "c/flowConfigEditorUtils";
 import {
-  addPopoverViewportListeners,
   buildPickerBreadcrumbs,
+  createPopoverViewportController,
+  createProgressiveRenderController,
   createPopoverState,
   positionAnchoredPopover,
-  removePopoverViewportListeners,
   setPopoverHostActive
 } from "c/flowConfigPopoverUtils";
 import { describeRecordPath } from "c/flowConfigSchemaService";
@@ -23,6 +23,7 @@ import {
   isActivationKey,
   nextActiveIndex
 } from "c/flowConfigPickerInteraction";
+import { buildResourceCompatibilityError } from "c/flowConfigResourceModel";
 
 export default class FlowConfigFieldPicker extends LightningElement {
   @api label = "Field";
@@ -47,9 +48,13 @@ export default class FlowConfigFieldPicker extends LightningElement {
   fieldDescriptorCache = {};
   selectedHydrationGeneration = 0;
   selectedHydrationKeys = new Set();
+  selectedHydrationPending = true;
   query = "";
   isOpen = false;
   activeIndex = -1;
+  visibleResultCount = null;
+  allFieldsCache = null;
+  relationshipFieldsCache = null;
   customValidityMessage = "";
   draggedFieldIndex = -1;
   dragOverFieldIndex = -1;
@@ -62,21 +67,34 @@ export default class FlowConfigFieldPicker extends LightningElement {
   popoverStyle = "";
   popoverState = createPopoverState();
   boundViewportHandler;
+  resultsReady = true;
+  progressiveResultsController;
+  viewportController;
 
   constructor() {
     super();
     this.boundViewportHandler = this.handleViewportChange.bind(this);
-  }
-
-  connectedCallback() {
-    addPopoverViewportListeners(this.boundViewportHandler);
+    this.viewportController = createPopoverViewportController(
+      this.boundViewportHandler
+    );
+    this.progressiveResultsController = createProgressiveRenderController(
+      () => {
+        if (this.isOpen) {
+          this.resultsReady = true;
+        }
+      }
+    );
   }
 
   renderedCallback() {
+    this.viewportController.setActive(this.isOpen);
     if (this.isOpen) {
       this.updatePopoverPosition();
     }
-    this.hydrateSelectedPaths();
+    if (this.selectedHydrationPending) {
+      this.selectedHydrationPending = false;
+      this.hydrateSelectedPaths();
+    }
   }
 
   @api
@@ -107,6 +125,7 @@ export default class FlowConfigFieldPicker extends LightningElement {
   setInternalValue(value) {
     this.selectedHydrationGeneration += 1;
     this.selectedHydrationKeys = new Set();
+    this.selectedHydrationPending = true;
     if (this._multiple) {
       this._values = this.parseValues(value);
       this._value = this._values.length ? JSON.stringify(this._values) : null;
@@ -169,6 +188,7 @@ export default class FlowConfigFieldPicker extends LightningElement {
         ...this.objectInfoCache,
         [this.currentObjectApiName]: data
       };
+      this.selectedHydrationPending = true;
     }
     this.objectInfoError = error || null;
     if (!this.isOpen && !this._multiple) {
@@ -177,7 +197,13 @@ export default class FlowConfigFieldPicker extends LightningElement {
   }
 
   get allFields() {
-    return Object.values(this.objectInfo?.fields || {})
+    if (
+      this.allFieldsCache?.objectInfo === this.objectInfo &&
+      this.allFieldsCache.path === this.currentPath
+    ) {
+      return this.allFieldsCache.value;
+    }
+    const value = Object.values(this.objectInfo?.fields || {})
       .map((field) => {
         const path = this.currentPath
           ? `${this.currentPath}.${field.apiName}`
@@ -205,6 +231,12 @@ export default class FlowConfigFieldPicker extends LightningElement {
         };
       })
       .sort((left, right) => left.label.localeCompare(right.label));
+    this.allFieldsCache = {
+      objectInfo: this.objectInfo,
+      path: this.currentPath,
+      value
+    };
+    return value;
   }
 
   get relationshipFields() {
@@ -212,7 +244,29 @@ export default class FlowConfigFieldPicker extends LightningElement {
       return [];
     }
     const query = this.query.trim().toLowerCase();
-    return Object.values(this.objectInfo?.fields || {})
+    return this.allRelationshipFields
+      .filter(
+        (field) =>
+          field.objectApiName && (!query || field.searchText.includes(query))
+      )
+      .map((field, index) => {
+        const isActive = index === this.activeIndex;
+        return {
+          ...field,
+          isActive,
+          optionClass: `result${isActive ? " result--active" : ""}`
+        };
+      });
+  }
+
+  get allRelationshipFields() {
+    if (
+      this.relationshipFieldsCache?.objectInfo === this.objectInfo &&
+      this.relationshipFieldsCache.path === this.currentPath
+    ) {
+      return this.relationshipFieldsCache.value;
+    }
+    const value = Object.values(this.objectInfo?.fields || {})
       .flatMap((field) =>
         relationshipTargetsForField(field).map((target) => {
           const relationshipPath = this.currentPath
@@ -248,32 +302,32 @@ export default class FlowConfigFieldPicker extends LightningElement {
           };
         })
       )
-      .filter(
-        (field) =>
-          field.objectApiName && (!query || field.searchText.includes(query))
-      )
-      .sort((left, right) => left.label.localeCompare(right.label))
-      .map((field, index) => {
-        const isActive = index === this.activeIndex;
-        return {
-          ...field,
-          isActive,
-          optionClass: `result${isActive ? " result--active" : ""}`
-        };
-      });
+      .filter((field) => field.objectApiName)
+      .sort((left, right) => left.label.localeCompare(right.label));
+    this.relationshipFieldsCache = {
+      objectInfo: this.objectInfo,
+      path: this.currentPath,
+      value
+    };
+    return value;
+  }
+
+  get matchingFields() {
+    const query = this.query.trim().toLowerCase();
+    return this.allFields.filter((field) => {
+      const typeMatches = isFieldTypeAccepted(
+        field.dataType,
+        this.acceptedTypes
+      );
+      return typeMatches && (!query || field.searchText.includes(query));
+    });
   }
 
   get filteredFields() {
-    const query = this.query.trim().toLowerCase();
-    return this.allFields
-      .filter((field) => {
-        const typeMatches = isFieldTypeAccepted(
-          field.dataType,
-          this.acceptedTypes
-        );
-        return typeMatches && (!query || field.searchText.includes(query));
-      })
-      .slice(0, Number(this.maxResults) || 100)
+    const visibleResultCount =
+      this.visibleResultCount || Number(this.maxResults) || 100;
+    return this.matchingFields
+      .slice(0, visibleResultCount)
       .map((field, index) => {
         const isSelected = this._values.includes(field.path);
         const isActive =
@@ -380,6 +434,10 @@ export default class FlowConfigFieldPicker extends LightningElement {
     return this._multiple && this.hasValue;
   }
 
+  get showRemoveAction() {
+    return this.hasValue && !this._multiple;
+  }
+
   get showOrderingControls() {
     return this._sortable;
   }
@@ -450,7 +508,7 @@ export default class FlowConfigFieldPicker extends LightningElement {
   }
 
   get hasResults() {
-    return this.filteredFields.length > 0;
+    return this.resultsReady && this.filteredFields.length > 0;
   }
 
   get showSelectedState() {
@@ -475,7 +533,7 @@ export default class FlowConfigFieldPicker extends LightningElement {
   }
 
   get hasRelationships() {
-    return this.relationshipFields.length > 0;
+    return this.resultsReady && this.relationshipFields.length > 0;
   }
 
   get hasAnyResults() {
@@ -483,7 +541,11 @@ export default class FlowConfigFieldPicker extends LightningElement {
   }
 
   get showNoResults() {
-    return !this.hasAnyResults;
+    return this.resultsReady && !this.hasAnyResults;
+  }
+
+  get showResultsLoading() {
+    return !this.resultsReady;
   }
 
   get isDisabled() {
@@ -511,15 +573,21 @@ export default class FlowConfigFieldPicker extends LightningElement {
     if (this.isDisabled) {
       return;
     }
+    const wasOpen = this.isOpen;
     this.isOpen = true;
     this.activeIndex = -1;
-    if (
-      !this._multiple &&
-      this._value &&
-      this.query === (this.selectedField?.label || this._value)
-    ) {
+    this.resetVisibleResults();
+    if (!this._multiple && this._value) {
       this.query = "";
     }
+    if (!wasOpen) {
+      this.scheduleResultsAfterPaint();
+    }
+  }
+
+  scheduleResultsAfterPaint() {
+    this.resultsReady = false;
+    this.progressiveResultsController.schedule();
   }
 
   @api
@@ -534,6 +602,25 @@ export default class FlowConfigFieldPicker extends LightningElement {
     this.query = inputEventValue(event);
     this.isOpen = !this.isDisabled;
     this.activeIndex = -1;
+    this.resetVisibleResults();
+  }
+
+  handleResultsScroll(event) {
+    const scrollArea = event.currentTarget;
+    const distanceFromBottom =
+      scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight;
+    const batchSize = Number(this.maxResults) || 100;
+    const visibleResultCount = this.visibleResultCount || batchSize;
+    if (
+      distanceFromBottom <= 24 &&
+      visibleResultCount < this.matchingFields.length
+    ) {
+      this.visibleResultCount = visibleResultCount + batchSize;
+    }
+  }
+
+  resetVisibleResults() {
+    this.visibleResultCount = null;
   }
 
   handleKeydown(event) {
@@ -567,9 +654,13 @@ export default class FlowConfigFieldPicker extends LightningElement {
       return;
     }
     this.beginEditTransition();
+    const wasOpen = this.isOpen;
     this.isOpen = true;
     this.query = "";
     this.activeIndex = -1;
+    if (!wasOpen) {
+      this.scheduleResultsAfterPaint();
+    }
     Promise.resolve().then(() => {
       this.template.querySelector("lightning-input")?.focus();
     });
@@ -660,6 +751,7 @@ export default class FlowConfigFieldPicker extends LightningElement {
     ];
     this.query = "";
     this.activeIndex = -1;
+    this.resetVisibleResults();
     this.objectInfoError = null;
     this.popoverState = createPopoverState();
   }
@@ -671,6 +763,7 @@ export default class FlowConfigFieldPicker extends LightningElement {
     this.browseStack = this.browseStack.slice(0, depth);
     this.query = "";
     this.activeIndex = -1;
+    this.resetVisibleResults();
     this.objectInfoError = null;
     this.popoverState = createPopoverState();
   }
@@ -843,21 +936,27 @@ export default class FlowConfigFieldPicker extends LightningElement {
   }
 
   handleClear(event) {
+    this.clearSelection(event, false);
+  }
+
+  handleClearAll(event) {
+    this.clearSelection(event, true);
+  }
+
+  clearSelection(event, keepOpen) {
     event?.stopPropagation();
     this._value = null;
     this._values = [];
     this.query = "";
-    this.isOpen = false;
-    this.browseStack = [];
-    this.resetPopoverPosition();
+    this.isOpen = keepOpen;
+    if (!keepOpen) {
+      this.browseStack = [];
+      this.resetPopoverPosition();
+    }
     if (this.propertyName) {
       this.dispatchEvent(createInputValueDeletedEvent(this.propertyName));
     }
     this.dispatchFieldChange(null, null);
-  }
-
-  handleDone() {
-    this.closePicker();
   }
 
   handleClose() {
@@ -895,6 +994,8 @@ export default class FlowConfigFieldPicker extends LightningElement {
     window.clearTimeout(this.editTransitionTimer);
     this.editTransitionTimer = null;
     this.isOpen = false;
+    this.progressiveResultsController.cancel();
+    this.resultsReady = true;
     this.browseStack = [];
     this.activeIndex = -1;
     this.query = this._multiple
@@ -934,7 +1035,8 @@ export default class FlowConfigFieldPicker extends LightningElement {
 
   disconnectedCallback() {
     this.selectedHydrationGeneration += 1;
-    removePopoverViewportListeners(this.boundViewportHandler);
+    this.viewportController.disconnect();
+    this.progressiveResultsController.cancel();
     window.clearTimeout(this.interactionResetTimer);
     window.clearTimeout(this.focusOutTimer);
     window.clearTimeout(this.editTransitionTimer);
@@ -966,7 +1068,46 @@ export default class FlowConfigFieldPicker extends LightningElement {
     if (this.customValidityMessage) {
       return this.customValidityMessage;
     }
+    const fieldError = this.selectedFieldValidationMessage;
+    if (fieldError) {
+      return fieldError;
+    }
     return this.required && !this.hasValue ? `${this.label} is required.` : "";
+  }
+
+  get selectedFieldValidationMessage() {
+    if (!this.hasValue || !this.acceptedTypes) {
+      return "";
+    }
+    const incompatibleFields = this.selectedFields.filter(
+      (field) =>
+        field.dataType &&
+        !isFieldTypeAccepted(field.dataType, this.acceptedTypes)
+    );
+    if (!incompatibleFields.length) {
+      return "";
+    }
+    const field = incompatibleFields[0];
+    const message = buildResourceCompatibilityError(
+      {
+        ...field,
+        dataType: flowDataTypeForField(field.dataType),
+        isCollection: false
+      },
+      {
+        acceptedTypes: this.acceptedTypes,
+        inputLabel: this.label,
+        resourceLabel:
+          field.path && field.path !== field.label
+            ? `${field.label} (${field.path})`
+            : field.label,
+        selectionKind: "field"
+      }
+    );
+    const additionalCount = incompatibleFields.length - 1;
+    return additionalCount
+      ? `${message} ${additionalCount} additional selected field${additionalCount === 1 ? " is" : "s are"} incompatible.`
+      : message;
   }
 
   get showSelectedValidationMessage() {

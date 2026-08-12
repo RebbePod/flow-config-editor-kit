@@ -42,7 +42,11 @@ export function isNormalObject(object = {}) {
   );
 }
 
-export function filterObjects(
+export function filterObjects(objects, options = {}) {
+  return filterPreparedObjects(prepareObjects(objects), options);
+}
+
+export function filterPreparedObjects(
   objects,
   {
     query = "",
@@ -54,7 +58,6 @@ export function filterObjects(
 ) {
   const normalizedQuery = query.trim().toLowerCase();
   return (Array.isArray(objects) ? objects : [])
-    .map(normalizeObjectDescriptor)
     .filter((object) => showAll || isNormalObject(object))
     .filter((object) => !queryableOnly || object.isQueryable)
     .filter(
@@ -66,11 +69,17 @@ export function filterObjects(
       (object) =>
         !normalizedQuery || object.searchText.includes(normalizedQuery)
     )
+    .slice(0, Math.max(1, Number(maxResults) || 200));
+}
+
+/** Normalizes and sorts a discovery response once for repeated local searches. */
+export function prepareObjects(objects) {
+  return (Array.isArray(objects) ? objects : [])
+    .map(normalizeObjectDescriptor)
     .sort((left, right) => {
       if (Boolean(left.isCustom) !== Boolean(right.isCustom)) {
         return left.isCustom ? 1 : -1;
       }
       return left.label.localeCompare(right.label);
-    })
-    .slice(0, Math.max(1, Number(maxResults) || 200));
+    });
 }

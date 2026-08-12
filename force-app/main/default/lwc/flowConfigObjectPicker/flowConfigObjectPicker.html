@@ -85,7 +85,10 @@
         ></c-flow-config-picker-header>
 
         <div class="results__scroll" onscroll={handleResultsScroll}>
-          <template lwc:if={hasResults}>
+          <template lwc:if={showResultsLoading}>
+            <p class="results__empty" role="status">Loading objects…</p>
+          </template>
+          <template lwc:elseif={hasResults}>
             <template for:each={objectGroups} for:item="group">
               <section class="object-group" key={group.key}>
                 <h3 class="object-group__title">{group.label}</h3>

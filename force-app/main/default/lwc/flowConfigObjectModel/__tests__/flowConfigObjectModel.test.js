@@ -1,7 +1,9 @@
 import {
+  filterPreparedObjects,
   filterObjects,
   isNormalObject,
-  normalizeObjectDescriptor
+  normalizeObjectDescriptor,
+  prepareObjects
 } from "c/flowConfigObjectModel";
 
 describe("flowConfigObjectModel", () => {
@@ -76,5 +78,21 @@ describe("flowConfigObjectModel", () => {
         queryableOnly: true
       }).map((object) => object.apiName)
     ).toEqual(["Account"]);
+  });
+
+  it("reuses a prepared, alphabetized object index for local searches", () => {
+    const prepared = prepareObjects([
+      { apiName: "Widget__c", label: "Widget", isCustom: true },
+      { apiName: "Account", label: "Account", isSearchable: true }
+    ]);
+    expect(prepared.map((object) => object.apiName)).toEqual([
+      "Account",
+      "Widget__c"
+    ]);
+    expect(
+      filterPreparedObjects(prepared, { query: "wid" }).map(
+        (object) => object.apiName
+      )
+    ).toEqual(["Widget__c"]);
   });
 });

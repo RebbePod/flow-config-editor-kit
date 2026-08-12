@@ -46,6 +46,90 @@ export function removePopoverViewportListeners(handler) {
   window.removeEventListener("scroll", handler, true);
 }
 
+/**
+ * Keeps viewport work scoped to an open picker and coalesces scroll/resize
+ * bursts into one measurement per animation frame.
+ */
+export function createPopoverViewportController(handler) {
+  let active = false;
+  let frame = null;
+  const run = () => {
+    frame = null;
+    if (active) {
+      handler();
+    }
+  };
+  const schedule = () => {
+    if (!active || frame !== null) {
+      return;
+    }
+    if (typeof window.requestAnimationFrame === "function") {
+      frame = true;
+      // eslint-disable-next-line @lwc/lwc/no-async-operation
+      const requestId = window.requestAnimationFrame(run);
+      if (frame === true) {
+        frame = requestId;
+      }
+    } else {
+      frame = true;
+      Promise.resolve().then(run);
+    }
+  };
+  const setActive = (nextActive) => {
+    const shouldBeActive = Boolean(nextActive);
+    if (shouldBeActive === active) {
+      return;
+    }
+    active = shouldBeActive;
+    if (active) {
+      addPopoverViewportListeners(schedule);
+      return;
+    }
+    removePopoverViewportListeners(schedule);
+    if (
+      frame !== null &&
+      frame !== true &&
+      typeof window.cancelAnimationFrame === "function"
+    ) {
+      window.cancelAnimationFrame(frame);
+    }
+    frame = null;
+  };
+  return {
+    setActive,
+    schedule,
+    disconnect: () => setActive(false)
+  };
+}
+
+/** Defers expensive result derivation until the picker shell has painted. */
+export function createProgressiveRenderController(onReady) {
+  let frame = null;
+  const cancel = () => {
+    if (frame !== null && typeof window.cancelAnimationFrame === "function") {
+      window.cancelAnimationFrame(frame);
+    }
+    frame = null;
+  };
+  const schedule = () => {
+    cancel();
+    const finish = () => {
+      frame = null;
+      onReady();
+    };
+    if (typeof window.requestAnimationFrame !== "function") {
+      Promise.resolve().then(finish);
+      return;
+    }
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    frame = window.requestAnimationFrame(() => {
+      // eslint-disable-next-line @lwc/lwc/no-async-operation
+      frame = window.requestAnimationFrame(finish);
+    });
+  };
+  return { schedule, cancel };
+}
+
 export function setPopoverHostActive(host, active) {
   if (!host) {
     return;

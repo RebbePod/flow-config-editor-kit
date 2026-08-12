@@ -6,6 +6,7 @@ import describeSObjectPath from "@salesforce/apex/FlowConfigApexTypeController.d
 import FlowConfigResourcePicker from "c/flowConfigResourcePicker";
 import { clearRecordPathCache } from "c/flowConfigSchemaService";
 import { clearMetadataCache } from "c/flowConfigMetadataService";
+import { installImmediateAnimationFrames } from "../../../../../../test-utils/pickerTestUtils";
 
 jest.mock(
   "@salesforce/apex/FlowConfigApexTypeController.describeType",
@@ -33,7 +34,12 @@ function pickerHeaderRoot(element) {
 }
 
 describe("c-flow-config-resource-picker", () => {
+  beforeEach(() => {
+    installImmediateAnimationFrames();
+  });
+
   afterEach(() => {
+    jest.restoreAllMocks();
     jest.clearAllMocks();
     clearRecordPathCache();
     clearMetadataCache();
@@ -166,6 +172,223 @@ describe("c-flow-config-resource-picker", () => {
     expect(element.validationMessage).toContain(
       "Running User > Full Name is a compound field"
     );
+  });
+
+  it("rejects a pasted resource whose type is incompatible with the input", async () => {
+    const element = createElement("c-flow-config-resource-picker", {
+      is: FlowConfigResourcePicker
+    });
+    element.label = "Page Size";
+    element.propertyName = "pageSize";
+    element.acceptedTypes = "Number";
+    element.collection = "exclude";
+    element.allowManual = true;
+    element.allowLiteral = true;
+    element.literalType = "Number";
+    element.builderContext = {
+      variables: [
+        { name: "TextVariable", label: "Text Variable", dataType: "String" }
+      ]
+    };
+    document.body.appendChild(element);
+
+    const input = element.shadowRoot.querySelector("lightning-input");
+    input.dispatchEvent(new CustomEvent("focus"));
+    input.dispatchEvent(
+      new CustomEvent("input", {
+        detail: { value: "{!TextVariable}" }
+      })
+    );
+    await flushPromises();
+    element.shadowRoot.querySelector("button.manual").click();
+    await flushPromises();
+
+    expect(element.validationMessage).toBe(
+      "“Text Variable” has type Text. Page Size requires a single Number value. Select a Number resource or enter a numeric value."
+    );
+    expect(element.reportValidity()).toBe(false);
+    expect(element.shadowRoot.querySelector(".picker__error").textContent).toBe(
+      element.validationMessage
+    );
+  });
+
+  it("accepts a restored resource with a compatible normalized numeric type", async () => {
+    const element = createElement("c-flow-config-resource-picker", {
+      is: FlowConfigResourcePicker
+    });
+    element.label = "Page Size";
+    element.acceptedTypes = "Number";
+    element.collection = "exclude";
+    element.valueDataType = "reference";
+    element.builderContext = {
+      variables: [{ name: "CountVariable", dataType: "Integer" }]
+    };
+    element.value = "{!CountVariable}";
+    document.body.appendChild(element);
+    await flushPromises();
+
+    expect(element.validationMessage).toBe("");
+    expect(element.reportValidity()).toBe(true);
+  });
+
+  it("reopens an existing literal without refreshing Flow Builder", async () => {
+    const element = createElement("c-flow-config-resource-picker", {
+      is: FlowConfigResourcePicker
+    });
+    element.label = "Number Input";
+    element.propertyName = "numberValue";
+    element.acceptedTypes = "Number";
+    element.collection = "exclude";
+    element.allowLiteral = true;
+    element.literalType = "Number";
+    element.valueDataType = "Number";
+    element.value = 324;
+    const refreshHandler = jest.fn();
+    element.addEventListener("flowresourcerefresh", refreshHandler);
+    document.body.appendChild(element);
+
+    element.shadowRoot
+      .querySelector("lightning-input")
+      .dispatchEvent(new CustomEvent("focus"));
+    await flushPromises();
+
+    expect(refreshHandler).not.toHaveBeenCalled();
+    expect(element.shadowRoot.querySelector(".results")).not.toBeNull();
+    expect(element.shadowRoot.querySelector("lightning-input").value).toBe(
+      "324"
+    );
+  });
+
+  it("paints the popover shell before building root resources", async () => {
+    const frames = [];
+    window.requestAnimationFrame.mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const element = createElement("c-flow-config-resource-picker", {
+      is: FlowConfigResourcePicker
+    });
+    element.acceptedTypes = "Number";
+    element.builderContext = {
+      variables: [{ name: "Count", label: "Count", dataType: "Number" }]
+    };
+    document.body.appendChild(element);
+
+    element.shadowRoot
+      .querySelector("lightning-input")
+      .dispatchEvent(new CustomEvent("focus"));
+    await flushPromises();
+
+    expect(element.shadowRoot.querySelector(".results")).not.toBeNull();
+    expect(
+      element.shadowRoot.querySelector(".results__empty").textContent
+    ).toBe("Loading resources…");
+    expect(element.shadowRoot.querySelector("button.result")).toBeNull();
+
+    frames.shift()(0);
+    await flushPromises();
+    expect(
+      element.shadowRoot.querySelector(".results__empty").textContent
+    ).toBe("Loading resources…");
+
+    frames.shift()(16);
+    await flushPromises();
+    expect(element.shadowRoot.querySelector(".results__empty")).toBeNull();
+    expect(
+      element.shadowRoot.querySelector("button.result").textContent
+    ).toContain("Count");
+  });
+
+  it("still requests refreshed Flow outputs for an empty input", async () => {
+    const element = createElement("c-flow-config-resource-picker", {
+      is: FlowConfigResourcePicker
+    });
+    element.propertyName = "numberValue";
+    element.acceptedTypes = "Number";
+    element.collection = "exclude";
+    element.allowLiteral = true;
+    element.literalType = "Number";
+    const refreshHandler = jest.fn();
+    element.addEventListener("flowresourcerefresh", refreshHandler);
+    document.body.appendChild(element);
+
+    element.shadowRoot
+      .querySelector("lightning-input")
+      .dispatchEvent(new CustomEvent("focus"));
+    await flushPromises();
+
+    expect(refreshHandler).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips unmatched automatic-output trees for a reopened literal", async () => {
+    const element = createElement("c-flow-config-resource-picker", {
+      is: FlowConfigResourcePicker
+    });
+    element.propertyName = "numberValue";
+    element.acceptedTypes = "Number";
+    element.collection = "exclude";
+    element.allowLiteral = true;
+    element.literalType = "Number";
+    element.valueDataType = "Number";
+    element.value = 324;
+    element.builderContext = {
+      subflows: [
+        {
+          name: "Tool_Schedule_Payments_Calculator",
+          label: "Tool - Schedule Payments Calculator"
+        }
+      ]
+    };
+    element.automaticOutputVariables = {
+      Tool_Schedule_Payments_Calculator: [
+        { apiName: "count", label: "Count", dataType: "Number" }
+      ]
+    };
+    document.body.appendChild(element);
+
+    element.shadowRoot
+      .querySelector("lightning-input")
+      .dispatchEvent(new CustomEvent("focus"));
+    await flushPromises();
+
+    expect(
+      element.shadowRoot.querySelector(".resource-group__title")
+    ).toBeNull();
+    expect(
+      element.shadowRoot.querySelector(
+        'button[data-key="automatic-container-Tool_Schedule_Payments_Calculator"]'
+      )
+    ).toBeNull();
+    expect(element.shadowRoot.querySelector("button.manual")).not.toBeNull();
+  });
+
+  it("shows only the matching nested output when its container does not match", async () => {
+    const element = createElement("c-flow-config-resource-picker", {
+      is: FlowConfigResourcePicker
+    });
+    element.acceptedTypes = "Number";
+    element.collection = "exclude";
+    element.builderContext = {
+      subflows: [{ name: "Call_Subflow", label: "Call Subflow" }]
+    };
+    element.automaticOutputVariables = {
+      Call_Subflow: [
+        { apiName: "count", label: "Matching Count", dataType: "Number" },
+        { apiName: "total", label: "Other Total", dataType: "Number" }
+      ]
+    };
+    document.body.appendChild(element);
+    const input = element.shadowRoot.querySelector("lightning-input");
+    input.dispatchEvent(new CustomEvent("focus"));
+    input.dispatchEvent(
+      new CustomEvent("input", { detail: { value: "matching" } })
+    );
+    await flushPromises();
+
+    const results = [
+      ...element.shadowRoot.querySelectorAll("button.result .result__label")
+    ].map((label) => label.textContent);
+    expect(results).toEqual(["Outputs from Call Subflow > Matching Count"]);
   });
 
   it("distinguishes API and System containers from Custom Label values", async () => {
@@ -1459,6 +1682,8 @@ describe("c-flow-config-resource-picker", () => {
     const input = element.shadowRoot.querySelector("lightning-input");
     const picker = element.shadowRoot.querySelector(".picker");
     input.dispatchEvent(new CustomEvent("focus"));
+    jest.runOnlyPendingTimers();
+    jest.runOnlyPendingTimers();
     await flushPromises();
 
     const row = element.shadowRoot.querySelector(
