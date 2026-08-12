@@ -6,6 +6,8 @@ The framework can only discover metadata Salesforce makes available to a custom 
 
 Flow Builder's native resource picker may see newly added screen components before the public custom-editor `builderContext` is refreshed. Custom editors do not have a supported command that forces Flow Builder to republish all sibling outputs. Closing/reopening the element or saving the screen can refresh the context.
 
+The framework requests a state-neutral automatic-output refresh after the picker shell has painted so Flow Builder metadata work does not block the interaction. This remains best effort: Flow Builder may republish the same stale context, and a save or editor reopen can still be required.
+
 ## Apex-defined types
 
 Member discovery uses an Apex controller first and an authenticated Visualforce/Tooling API bridge when necessary. Access depends on the Flow builder's permissions, Salesforce session behavior, API availability, and the Apex class exposing Aura-enabled members. Organizations may disable the bridge as described in [Security](../SECURITY.md).

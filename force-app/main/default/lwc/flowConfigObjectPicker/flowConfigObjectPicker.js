@@ -4,11 +4,11 @@ import {
   createInputValueDeletedEvent
 } from "c/flowConfigEditorUtils";
 import {
-  addPopoverViewportListeners,
   buildPickerBreadcrumbs,
+  createPopoverViewportController,
+  createProgressiveRenderController,
   createPopoverState,
   positionAnchoredPopover,
-  removePopoverViewportListeners,
   setPopoverHostActive
 } from "c/flowConfigPopoverUtils";
 import { listObjects } from "c/flowConfigSchemaService";
@@ -19,7 +19,8 @@ import {
   nextActiveIndex
 } from "c/flowConfigPickerInteraction";
 import {
-  filterObjects,
+  filterPreparedObjects,
+  prepareObjects,
   normalizeObjectDescriptor
 } from "c/flowConfigObjectModel";
 
@@ -41,6 +42,7 @@ export default class FlowConfigObjectPicker extends LightningElement {
   isOpen = false;
   activeIndex = -1;
   visibleResultCount = null;
+  matchingObjectsCache = null;
   customValidityMessage = "";
   suppressBlurClose = false;
   interactionResetTimer;
@@ -50,18 +52,31 @@ export default class FlowConfigObjectPicker extends LightningElement {
   popoverStyle = "";
   popoverState = createPopoverState();
   boundViewportHandler;
+  resultsReady = true;
+  progressiveResultsController;
+  viewportController;
 
   constructor() {
     super();
     this.boundViewportHandler = this.handleViewportChange.bind(this);
+    this.viewportController = createPopoverViewportController(
+      this.boundViewportHandler
+    );
+    this.progressiveResultsController = createProgressiveRenderController(
+      () => {
+        if (this.isOpen) {
+          this.resultsReady = true;
+        }
+      }
+    );
   }
 
   connectedCallback() {
-    addPopoverViewportListeners(this.boundViewportHandler);
     this.loadObjects();
   }
 
   renderedCallback() {
+    this.viewportController.setActive(this.isOpen);
     if (this.isOpen) {
       this.updatePopoverPosition();
     }
@@ -70,7 +85,8 @@ export default class FlowConfigObjectPicker extends LightningElement {
   async loadObjects() {
     this.isLoading = true;
     try {
-      this.objects = await listObjects();
+      this.objects = prepareObjects(await listObjects());
+      this.matchingObjectsCache = null;
       this.loadError = null;
     } catch (error) {
       this.objects = [];
@@ -136,13 +152,16 @@ export default class FlowConfigObjectPicker extends LightningElement {
   }
 
   get matchingObjects() {
-    return filterObjects(this.objects, {
-      query: this.query,
-      allowedObjectNames: this.allowedObjectNames,
-      queryableOnly: this._queryableOnly,
-      showAll: this._showAll,
-      maxResults: Math.max(1, this.objects.length)
-    });
+    if (!this.matchingObjectsCache) {
+      this.matchingObjectsCache = filterPreparedObjects(this.objects, {
+        query: this.query,
+        allowedObjectNames: this.allowedObjectNames,
+        queryableOnly: this._queryableOnly,
+        showAll: this._showAll,
+        maxResults: Math.max(1, this.objects.length)
+      });
+    }
+    return this.matchingObjectsCache;
   }
 
   get filteredObjects() {
@@ -204,7 +223,11 @@ export default class FlowConfigObjectPicker extends LightningElement {
   }
 
   get hasResults() {
-    return this.filteredObjects.length > 0;
+    return this.resultsReady && this.filteredObjects.length > 0;
+  }
+
+  get showResultsLoading() {
+    return !this.resultsReady;
   }
 
   get breadcrumbItems() {
@@ -222,12 +245,21 @@ export default class FlowConfigObjectPicker extends LightningElement {
   }
 
   handleFocus() {
+    const wasOpen = this.isOpen;
     this.isOpen = true;
     this.activeIndex = -1;
-    if (this._value && this.query === (this.selectedLabel || this._value)) {
+    if (this._value) {
       this.query = "";
     }
     this.resetVisibleResults();
+    if (!wasOpen) {
+      this.scheduleResultsAfterPaint();
+    }
+  }
+
+  scheduleResultsAfterPaint() {
+    this.resultsReady = false;
+    this.progressiveResultsController.schedule();
   }
 
   @api
@@ -266,10 +298,14 @@ export default class FlowConfigObjectPicker extends LightningElement {
 
   handleEdit() {
     this.beginEditTransition();
+    const wasOpen = this.isOpen;
     this.isOpen = true;
     this.query = "";
     this.activeIndex = -1;
     this.resetVisibleResults();
+    if (!wasOpen) {
+      this.scheduleResultsAfterPaint();
+    }
     Promise.resolve().then(() => {
       this.template.querySelector("lightning-input")?.focus();
     });
@@ -349,6 +385,7 @@ export default class FlowConfigObjectPicker extends LightningElement {
 
   resetVisibleResults() {
     this.visibleResultCount = null;
+    this.matchingObjectsCache = null;
   }
 
   commitObject(object) {
@@ -436,6 +473,8 @@ export default class FlowConfigObjectPicker extends LightningElement {
     window.clearTimeout(this.focusOutTimer);
     this.focusOutTimer = null;
     this.isOpen = false;
+    this.progressiveResultsController.cancel();
+    this.resultsReady = true;
     this.activeIndex = -1;
     this.query = this.selectedLabel || this._value || "";
     this.resetPopoverPosition();
@@ -470,7 +509,8 @@ export default class FlowConfigObjectPicker extends LightningElement {
   }
 
   disconnectedCallback() {
-    removePopoverViewportListeners(this.boundViewportHandler);
+    this.viewportController.disconnect();
+    this.progressiveResultsController.cancel();
     window.clearTimeout(this.interactionResetTimer);
     window.clearTimeout(this.focusOutTimer);
     window.clearTimeout(this.editTransitionTimer);

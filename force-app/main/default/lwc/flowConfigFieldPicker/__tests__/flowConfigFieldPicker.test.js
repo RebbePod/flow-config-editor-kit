@@ -3,6 +3,7 @@ import { getObjectInfo } from "lightning/uiObjectInfoApi";
 import describeSObjectPath from "@salesforce/apex/FlowConfigApexTypeController.describeSObjectPath";
 import FlowConfigFieldPicker from "c/flowConfigFieldPicker";
 import { clearRecordPathCache } from "c/flowConfigSchemaService";
+import { installImmediateAnimationFrames } from "../../../../../../test-utils/pickerTestUtils";
 
 jest.mock(
   "@salesforce/apex/FlowConfigApexTypeController.describeSObjectPath",
@@ -64,7 +65,12 @@ const USER_OBJECT_INFO = {
 };
 
 describe("c-flow-config-field-picker", () => {
+  beforeEach(() => {
+    installImmediateAnimationFrames();
+  });
+
   afterEach(() => {
+    jest.restoreAllMocks();
     jest.clearAllMocks();
     clearRecordPathCache();
     jest.useRealTimers();
@@ -337,6 +343,42 @@ describe("c-flow-config-field-picker", () => {
       newValue: '["AnnualRevenue"]',
       newValueDataType: "String"
     });
+  });
+
+  it("clears every selected field from the heading icon and stays open", async () => {
+    const element = createElement("c-flow-config-field-picker", {
+      is: FlowConfigFieldPicker
+    });
+    element.objectApiName = "Account";
+    element.propertyName = "displayFieldsJson";
+    element.multiple = true;
+    element.value = '["Name","AnnualRevenue"]';
+    const configurationHandler = jest.fn();
+    const fieldHandler = jest.fn();
+    element.addEventListener(
+      "configuration_editor_input_value_changed",
+      configurationHandler
+    );
+    element.addEventListener("fieldchange", fieldHandler);
+    document.body.appendChild(element);
+    getObjectInfo.emit(ACCOUNT_OBJECT_INFO);
+    await Promise.resolve();
+
+    element.shadowRoot.querySelector(".selection").click();
+    await Promise.resolve();
+    expect(element.shadowRoot.querySelector("lightning-button")).toBeNull();
+    element.shadowRoot.querySelector(".selected-fields__clear").click();
+    await Promise.resolve();
+
+    expect(configurationHandler.mock.calls[0][0].detail).toEqual({
+      name: "displayFieldsJson",
+      newValue: null,
+      newValueDataType: "String"
+    });
+    expect(fieldHandler.mock.calls[0][0].detail.selectedValues).toEqual([]);
+    expect(element.shadowRoot.querySelector(".selected-fields")).toBeNull();
+    expect(element.shadowRoot.querySelector(".results")).not.toBeNull();
+    expect(element.shadowRoot.querySelector("button.remove")).toBeNull();
   });
 
   it("reorders selected fields with compact arrow buttons", async () => {

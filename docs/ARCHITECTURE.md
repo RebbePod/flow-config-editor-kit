@@ -44,6 +44,10 @@ It offers two levels. The imperative methods are the real API and carry no assum
 
 `flowConfigGenericTypeCoordinator` contains pure transition logic for generic SObject mappings. `flowConfigPickerInteraction` centralizes transient pointer/focus behavior. `flowConfigPopoverUtils` measures viewport space and provides a single placement model for all pickers.
 
+All searchable pickers follow the same performance lifecycle: open and position a lightweight shell, allow that state to paint, then derive the first result view. Scroll and resize listeners exist only while a picker is open and their measurements are coalesced to one animation frame. Field, object, and resource lists append bounded batches as the results scroller reaches the bottom.
+
+Normalized metadata and lowercase search documents are created when their source metadata changes. Render getters may decorate those prepared models for current selection and keyboard state, but should not repeatedly normalize, serialize, or sort the underlying Salesforce metadata. Caches are invalidated by source identity plus the query, type, collection, and browsing options that affect their result.
+
 ### Metadata
 
 `flowConfigSchemaService` and `flowConfigMetadataService` cache server descriptions. The Apex controller uses Schema describe for accessible SObject discovery, field paths, and hierarchy settings and parses Apex source as a fallback. The Visualforce bridge uses the Tooling API symbol table when Flow does not expose Apex-defined members.
@@ -54,6 +58,7 @@ It offers two levels. The imperative methods are the real API and carry no assum
 - The custom editor mirrors those values and dispatches configuration events.
 - Pickers own only editing state: query, breadcrumbs, active result, and popover state.
 - Metadata services own request caches, not selected values.
+- Model modules own prepared search documents and normalized view-model caches; presentation components own only their invalidation keys and visible batch size.
 
 This boundary prevents a picker from silently inventing business rules or retaining stale selections after Flow Builder rehydrates the editor.
 

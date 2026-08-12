@@ -1,15 +1,10 @@
 import { createElement } from "lwc";
 import FlowConfigValueInput from "c/flowConfigValueInput";
+import { installImmediateAnimationFrames } from "../../../../../../test-utils/pickerTestUtils";
 
 describe("c-flow-config-value-input", () => {
   beforeEach(() => {
-    jest
-      .spyOn(window, "requestAnimationFrame")
-      .mockImplementation((callback) => {
-        callback(0);
-        return 1;
-      });
-    jest.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+    installImmediateAnimationFrames();
   });
 
   afterEach(() => {

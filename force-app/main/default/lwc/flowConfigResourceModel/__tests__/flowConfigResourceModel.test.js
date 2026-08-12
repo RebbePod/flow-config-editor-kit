@@ -1,8 +1,10 @@
 import {
   automaticOutputEntry,
-  buildResourceCompatibilityError,
   buildOutputItems,
   buildRecordBrowseStack,
+  buildResourceCompatibilityError,
+  buildResourceSearchText,
+  compatibleResourceTypesForInput,
   findNestedResource,
   groupResourceOptions,
   normalizeAutomaticOutputMap,
@@ -147,5 +149,18 @@ describe("flowConfigResourceModel", () => {
       isListContainer: true
     });
     expect(items[1].items[0].reference).toBe("{!DataFetcher.record.Name}");
+  });
+
+  it("centralizes input coercion and indexes nested metadata", () => {
+    expect(compatibleResourceTypesForInput("String")).toBe(
+      "String,Number,Boolean,Date,DateTime,Time"
+    );
+    expect(compatibleResourceTypesForInput("Number")).toBe("Number");
+    expect(
+      buildResourceSearchText({
+        label: "Schedule Tool",
+        outputs: [{ name: "recordCount", type: "Number" }]
+      })
+    ).toContain("recordcount");
   });
 });

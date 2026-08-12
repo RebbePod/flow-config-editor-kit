@@ -115,6 +115,18 @@ export const GLOBAL_CONTAINERS = [
   }
 ];
 
+const INPUT_RESOURCE_COMPATIBILITY = Object.freeze({
+  string: ["String", "Number", "Boolean", "Date", "DateTime", "Time"],
+  number: ["Number"]
+});
+
+export function compatibleResourceTypesForInput(valueType) {
+  const normalizedType = String(valueType || "String").toLowerCase();
+  return (INPUT_RESOURCE_COMPATIBILITY[normalizedType] || [valueType])
+    .filter(Boolean)
+    .join(",");
+}
+
 export function typeToken(value) {
   if (value && typeof value === "object") {
     return (
@@ -312,6 +324,32 @@ export function searchNestedItems(items, query, ancestors = []) {
     }
   });
   return matches;
+}
+
+/**
+ * Builds a stable lowercase search document once when Flow metadata changes.
+ * Picker queries can then avoid repeatedly serializing large metadata trees.
+ */
+export function buildResourceSearchText(value) {
+  const tokens = [];
+  const visit = (item) => {
+    if (item === null || item === undefined) {
+      return;
+    }
+    if (["string", "number", "boolean"].includes(typeof item)) {
+      tokens.push(String(item));
+      return;
+    }
+    if (Array.isArray(item)) {
+      item.forEach(visit);
+      return;
+    }
+    if (typeof item === "object") {
+      Object.values(item).forEach(visit);
+    }
+  };
+  visit(value);
+  return tokens.join(" ").toLowerCase();
 }
 
 export function normalizeAutomaticOutputMap(value) {

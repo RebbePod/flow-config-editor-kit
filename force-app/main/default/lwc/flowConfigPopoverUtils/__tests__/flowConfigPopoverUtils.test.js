@@ -1,4 +1,6 @@
 import {
+  createPopoverViewportController,
+  createProgressiveRenderController,
   createPopoverState,
   positionAnchoredPopover
 } from "c/flowConfigPopoverUtils";
@@ -118,5 +120,46 @@ describe("flowConfigPopoverUtils", () => {
     expect(corrected.state.correctionX).not.toBe(0);
     expect(corrected.state.correctionY).not.toBe(0);
     expect(corrected.state.widthCorrection).toBe(20);
+  });
+
+  it("listens only while active and coalesces viewport work by frame", () => {
+    const frames = [];
+    window.requestAnimationFrame = jest.fn((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    window.cancelAnimationFrame = jest.fn();
+    const handler = jest.fn();
+    const controller = createPopoverViewportController(handler);
+
+    window.dispatchEvent(new CustomEvent("resize"));
+    expect(frames).toHaveLength(0);
+    controller.setActive(true);
+    window.dispatchEvent(new CustomEvent("resize"));
+    window.dispatchEvent(new CustomEvent("scroll"));
+    expect(frames).toHaveLength(1);
+    frames.shift()();
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    controller.disconnect();
+    window.dispatchEvent(new CustomEvent("resize"));
+    expect(frames).toHaveLength(0);
+  });
+
+  it("waits two frames before deriving picker results", () => {
+    const frames = [];
+    window.requestAnimationFrame = jest.fn((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const onReady = jest.fn();
+    const controller = createProgressiveRenderController(onReady);
+
+    controller.schedule();
+    expect(onReady).not.toHaveBeenCalled();
+    frames.shift()();
+    expect(onReady).not.toHaveBeenCalled();
+    frames.shift()();
+    expect(onReady).toHaveBeenCalledTimes(1);
   });
 });

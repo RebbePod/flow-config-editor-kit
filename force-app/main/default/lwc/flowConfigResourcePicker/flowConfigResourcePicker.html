@@ -86,7 +86,7 @@
           onclose={handleClose}
         ></c-flow-config-picker-header>
 
-        <div class="results__scroll">
+        <div class="results__scroll" onscroll={handleResultsScroll}>
           <template lwc:if={hasResults}>
             <template lwc:if={showGroupedResults}>
               <template for:each={displayGroups} for:item="group">

@@ -226,7 +226,7 @@ Number literals must parse completely as finite numbers. Partially numeric or no
 
 ### `c-flow-config-resource-picker` — Flow resource browser
 
-Above, plus `accepted-types` (comma-separated; empty = all), `collection` (`any`|`only`|`exclude`), `allow-manual`, `allow-literal`, `allow-record-fields`, `literal-type`, `max-results`.
+Above, plus `accepted-types` (comma-separated; empty = all), `collection` (`any`|`only`|`exclude`), `allow-manual`, `allow-literal`, `allow-record-fields`, `literal-type`, `max-results` (root scroll-batch size and nested-level result limit, default 100).
 
 Event `resourcechange` → `{ name, newValue, newValueDataType, resource }`.
 
@@ -234,9 +234,11 @@ Committed, restored, and manually pasted references use the same `accepted-types
 
 ### `c-flow-config-field-picker` — SObject field selection
 
-`label`, `property-name`, `object-api-name`, `value`, `multiple`, `sortable` (default `true`), `accepted-types`, `max-results`, `max-relationship-depth` (default 5), `required`, `placeholder`, `field-level-help`.
+`label`, `property-name`, `object-api-name`, `value`, `multiple`, `sortable` (default `true`), `accepted-types`, `max-results` (scroll-loaded field batch size, default 100), `max-relationship-depth` (default 5), `required`, `placeholder`, `field-level-help`.
 
 Event `fieldchange` → `{ name, newValue, newValueDataType, field, selectedValues, selectedFields }`.
+
+In multiple mode, the selected-fields heading includes a compact icon-only clear-all control that leaves the picker open; each selected row can still be removed independently. There is no separate Done footer.
 
 Saved single and multiple fields are revalidated against `accepted-types` after field metadata resolves. Known incompatible paths report the selected field label/API path, actual Flow type, and required type. Unresolved legacy paths remain allowed.
 
@@ -245,6 +247,8 @@ Saved single and multiple fields are revalidated against `accepted-types` after 
 `label`, `property-name`, `value`, `available-object-types` (comma-separated or array; empty/`All` = no allowlist), `queryable-only`, `show-all` (default false), `max-results` (scroll-loaded batch size, default 200), `required`, `placeholder`, `field-level-help`.
 
 Event `objectchange` → `{ name, newValue, newValueDataType, object, objectType }`. The selected API name is persisted as a Flow String. When `property-name` is supplied, selection and clearing also dispatch the standard Flow input-value event. The picker restores saved API names, groups standard and custom objects, and uses the shared picker popover and keyboard interaction. It initially shows user-facing standard, custom, and external objects. A root-level `Show all objects` switch reveals accessible feed/history/share/event/setting/internal objects and emits `filterchange` → `{ showAll }`. Reaching the bottom appends another `max-results` batch. Search and filter changes reset to the first batch. Missing-label markers fall back to API names.
+
+Resource, field, and object pickers paint a positioned loading shell before deriving their initial results. Their viewport listeners are active only while open, and large lists append in bounded batches.
 
 ### `c-flow-config-field-input` — field or custom value
 

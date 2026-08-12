@@ -6,6 +6,7 @@ import describeSObjectPath from "@salesforce/apex/FlowConfigApexTypeController.d
 import FlowConfigResourcePicker from "c/flowConfigResourcePicker";
 import { clearRecordPathCache } from "c/flowConfigSchemaService";
 import { clearMetadataCache } from "c/flowConfigMetadataService";
+import { installImmediateAnimationFrames } from "../../../../../../test-utils/pickerTestUtils";
 
 jest.mock(
   "@salesforce/apex/FlowConfigApexTypeController.describeType",
@@ -34,13 +35,7 @@ function pickerHeaderRoot(element) {
 
 describe("c-flow-config-resource-picker", () => {
   beforeEach(() => {
-    jest
-      .spyOn(window, "requestAnimationFrame")
-      .mockImplementation((callback) => {
-        callback(0);
-        return 1;
-      });
-    jest.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+    installImmediateAnimationFrames();
   });
 
   afterEach(() => {
