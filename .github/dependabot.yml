@@ -1,25 +1,75 @@
 version: 2
+
+# Keep security fixes prompt while batching routine toolchain maintenance.
+# Salesforce LWC packages have tightly coupled peer dependencies, so major
+# upgrades are reviewed intentionally with `npm run check:dependencies` and
+# `npm run verify` instead of being opened automatically.
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+      time: "10:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 2
+    labels:
+      - dependencies
+      - javascript
+    commit-message:
+      prefix: chore
+      include: scope
     groups:
-      development-dependencies:
+      salesforce-lwc-toolchain:
+        applies-to: version-updates
+        patterns:
+          - "@salesforce/*"
+          - "@lwc/*"
+          - "@babel/*"
+          - "eslint*"
+          - "prettier*"
         dependency-type: development
+        update-types:
+          - minor
+          - patch
+      other-development-tools:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+      security-fixes:
+        applies-to: security-updates
+        patterns:
+          - "*"
     ignore:
-      # Babel 8 is incompatible with the Salesforce LWC ESLint toolchain:
-      # @lwc/eslint-plugin-lwc v3 declares `peer @babel/eslint-parser@"^7"`,
-      # so npm ci fails with ERESOLVE. Remove this entry once that plugin
-      # supports Babel 8; do not work around it with --legacy-peer-deps.
-      - dependency-name: "@babel/core"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@babel/eslint-parser"
-        update-types: ["version-update:semver-major"]
+      # Major development-tool upgrades require coordinated peer-dependency,
+      # Node-engine, lint, Jest, and Salesforce validation review. Dependabot
+      # security updates are not suppressed by this version-update rule.
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+      time: "10:30"
+      timezone: America/New_York
+    open-pull-requests-limit: 1
+    labels:
+      - dependencies
+      - github_actions
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      workflow-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      workflow-security-fixes:
+        applies-to: security-updates
+        patterns:
+          - "*"
