@@ -142,6 +142,33 @@ home: true
   </div>
 </section>
 
+<section id="agent-setup" class="agent-section">
+  <div class="agent-section__intro">
+    <p class="eyebrow">Agent-ready documentation</p>
+    <h2>Give your coding agent the complete contract.</h2>
+    <p>Start with one purpose-built instruction file. It contains the exact metadata, component APIs, events, value formats, recipes, and constraints an agent needs.</p>
+    <a class="button button--primary" href="{{ '/llms.txt' | relative_url }}">Open llms.txt</a>
+  </div>
+  <div class="agent-paths">
+    <article>
+      <span>Using the kit</span>
+      <h3>Build a Flow editor</h3>
+      <p>Point the agent at <code>docs/llms.txt</code>, then describe the screen component and configuration inputs you need.</p>
+      <pre><code>Read docs/llms.txt, then add a custom
+property editor for my Flow component.</code></pre>
+      <a href="https://github.com/RebbePod/flow-config-editor-kit/tree/main/.agents/skills/build-flow-config-editor">Use the consumer skill →</a>
+    </article>
+    <article>
+      <span>Changing the kit</span>
+      <h3>Contribute to the framework</h3>
+      <p>Start with the repository’s contributor instructions, which route the agent to the right extension, picker-UI, and validation skills.</p>
+      <pre><code>Read AGENTS.md and load every skill
+relevant to the framework change.</code></pre>
+      <a href="https://github.com/RebbePod/flow-config-editor-kit/blob/main/AGENTS.md">Open AGENTS.md →</a>
+    </article>
+  </div>
+</section>
+
 <section class="final-cta">
   <div>
     <p class="eyebrow">Ready to build?</p>
