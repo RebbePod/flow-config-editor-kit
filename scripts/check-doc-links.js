@@ -13,10 +13,12 @@ const documents = [
     .readdirSync(path.join(root, "docs"))
     .filter((name) => name.endsWith(".md"))
     .map((name) => path.join("docs", name)),
+  "docs/_layouts/default.html",
   "examples/README.md"
 ];
 const missing = [];
 const markdownLink = /\[[^\]]*\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g;
+const liquidAsset = /src="\{\{\s*'([^']+)'\s*\|\s*relative_url\s*\}\}"/g;
 
 for (const document of documents) {
   const absoluteDocument = path.join(root, document);
@@ -40,6 +42,13 @@ for (const document of documents) {
     );
     if (!fs.existsSync(resolved)) {
       missing.push(`${document}: ${target}`);
+    }
+  }
+
+  for (const match of source.matchAll(liquidAsset)) {
+    const target = decodeURIComponent(match[1]).replace(/^\//, "");
+    if (!fs.existsSync(path.join(root, "docs", target))) {
+      missing.push(`${document}: ${match[1]}`);
     }
   }
 }

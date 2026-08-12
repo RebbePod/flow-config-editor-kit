@@ -332,7 +332,8 @@ a:hover {
 }
 
 .section-block,
-.path-section {
+.path-section,
+.screenshot-showcase {
   padding-block: 6rem;
   border-top: 1px solid var(--line);
 }
@@ -369,6 +370,101 @@ a:hover {
   border: 1px solid var(--line);
   background: var(--line);
   grid-template-columns: repeat(2, 1fr);
+}
+
+.screenshot-grid {
+  display: grid;
+  gap: 1.2rem;
+  margin-top: 3rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.screenshot-card {
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--white);
+  box-shadow: 0 16px 42px rgba(7, 26, 52, 0.08);
+}
+
+.screenshot-card--wide {
+  grid-column: 1 / -1;
+}
+
+.screenshot-card a {
+  display: block;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.screenshot-card__frame {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border-bottom: 1px solid var(--line);
+  background: #eef2f5;
+}
+
+.screenshot-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  transition: transform 180ms ease;
+}
+
+.screenshot-card a:hover img {
+  transform: scale(1.012);
+}
+
+.screenshot-card figcaption {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1.2rem 1.35rem 1.35rem;
+}
+
+.screenshot-card figcaption span {
+  color: var(--muted);
+  font-size: 0.93rem;
+}
+
+.doc-shot,
+.doc-shot-grid {
+  margin-block: 2rem 3rem;
+}
+
+.doc-shot-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.doc-shot-grid .doc-shot {
+  margin: 0;
+}
+
+.doc-shot {
+  overflow: hidden;
+  margin-inline: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--white);
+  box-shadow: 0 12px 34px rgba(7, 26, 52, 0.08);
+}
+
+.doc-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.doc-shot figcaption {
+  padding: 0.9rem 1rem 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 .feature-card {
@@ -581,8 +677,18 @@ a:hover {
   }
 
   .section-block,
-  .path-section {
+  .path-section,
+  .screenshot-showcase {
     padding-block: 4rem;
+  }
+
+  .screenshot-grid,
+  .doc-shot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .screenshot-card--wide {
+    grid-column: auto;
   }
 
   .architecture-strip {
