@@ -39,6 +39,40 @@ home: true
   </div>
 </section>
 
+<section class="screenshot-showcase">
+  <div class="section-heading">
+    <p class="eyebrow">Inside Flow Builder</p>
+    <h2>Familiar controls, richer configuration</h2>
+    <p>The pickers fit directly into the standard properties panel while adding searchable metadata, relationship browsing, and multi-selection.</p>
+  </div>
+  <div class="screenshot-grid">
+    <figure class="screenshot-card screenshot-card--wide">
+      <a href="{{ '/COMPONENT_API/#c-flow-config-object-picker' | relative_url }}">
+        <span class="screenshot-card__frame">
+          <img src="{{ '/assets/images/screenshots/Object%20Name%20Picker.png' | relative_url }}" width="1282" height="1290" loading="lazy" decoding="async" alt="Object picker open in Salesforce Flow Builder with standard objects and a Show all objects toggle">
+        </span>
+        <figcaption><strong>Object discovery</strong><span>Search common objects first, then reveal specialized metadata when needed.</span></figcaption>
+      </a>
+    </figure>
+    <figure class="screenshot-card">
+      <a href="{{ '/COMPONENT_API/#c-flow-config-field-picker' | relative_url }}">
+        <span class="screenshot-card__frame">
+          <img src="{{ '/assets/images/screenshots/Multi%20Field%20Selection.png' | relative_url }}" width="1306" height="1554" loading="lazy" decoding="async" alt="Multi-field picker with selected fields, ordering controls, and relationship fields">
+        </span>
+        <figcaption><strong>Multi-field selection</strong><span>Review, reorder, remove, and browse relationships in one popover.</span></figcaption>
+      </a>
+    </figure>
+    <figure class="screenshot-card">
+      <a href="{{ '/COMPONENT_API/#c-flow-config-value-input' | relative_url }}">
+        <span class="screenshot-card__frame">
+          <img src="{{ '/assets/images/screenshots/Text%20Input%202.png' | relative_url }}" width="1310" height="1332" loading="lazy" decoding="async" alt="Text value input browsing subflow outputs, global constants, and global variables">
+        </span>
+        <figcaption><strong>Flow resources</strong><span>Browse outputs, constants, globals, and other compatible values.</span></figcaption>
+      </a>
+    </figure>
+  </div>
+</section>
+
 <section class="section-block">
   <div class="section-heading">
     <p class="eyebrow">The useful parts are already built</p>

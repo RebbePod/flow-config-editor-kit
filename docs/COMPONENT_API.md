@@ -136,6 +136,11 @@ Opening is progressive: the positioned popover shell renders first with a loadin
 
 Resource searches include screen fields plus automatic action, Apex action, and subflow outputs. A container is shown only when its own label matches; when only a nested output matches, that output is shown directly with its parent path. Unmatched screen and automatic-output trees are skipped before they are built.
 
+<figure class="doc-shot">
+  <img src="{{ '/assets/images/screenshots/Text%20Input%202.png' | relative_url }}" width="1310" height="1332" loading="lazy" decoding="async" alt="Text value input showing grouped subflow outputs, global constants, and global variables in Flow Builder">
+  <figcaption>A Text value input exposes only compatible Flow resources while preserving their native groups and nested navigation.</figcaption>
+</figure>
+
 ## `c-flow-config-resource-picker`
 
 The lower-level Flow resource browser.
@@ -170,6 +175,11 @@ The popover shell paints before root resource derivation. Root results append an
 
 `reportValidity()` applies the same `accepted-types` and `collection` compatibility rules to committed, restored, and manually pasted references that the browser applies while filtering results. Known incompatible references return `false` and display a contextual error. References whose metadata cannot yet be resolved are not rejected speculatively.
 
+<figure class="doc-shot">
+  <img src="{{ '/assets/images/screenshots/Text%20Input%201.png' | relative_url }}" width="1286" height="1420" loading="lazy" decoding="async" alt="Resource picker browsing through Opportunity, Campaign, Parent Campaign, and Owner relationship levels">
+  <figcaption>Breadcrumbs keep every relationship level visible and directly navigable during a deep record-field search.</figcaption>
+</figure>
+
 ## `c-flow-config-field-picker`
 
 Searches fields for a known SObject and supports relationship traversal.
@@ -201,6 +211,17 @@ Saved single and multiple selections are revalidated against `accepted-types` af
 
 The popover shell paints before field view-model derivation. Reaching the bottom appends another `max-results` field batch; changing the query or relationship level resets the batch.
 
+<div class="doc-shot-grid">
+  <figure class="doc-shot">
+    <img src="{{ '/assets/images/screenshots/Single%20Field%20Selection.png' | relative_url }}" width="1316" height="1334" loading="lazy" decoding="async" alt="Single-field picker showing relationship fields and regular Account fields">
+    <figcaption>Single-field selection groups relationships separately from selectable fields.</figcaption>
+  </figure>
+  <figure class="doc-shot">
+    <img src="{{ '/assets/images/screenshots/Multi%20Field%20Selection.png' | relative_url }}" width="1306" height="1554" loading="lazy" decoding="async" alt="Multi-field picker showing three ordered selections and relationship fields">
+    <figcaption>Multiple mode keeps selected fields visible above the browsable results.</figcaption>
+  </figure>
+</div>
+
 ## `c-flow-config-object-picker`
 
 Searches accessible Salesforce objects and persists the selected object API name as a Flow String. It uses the same selected pill, searchable grouped popover, keyboard behavior, shared header, and viewport-aware placement as the resource and field pickers. Saved API names remain visible even if their metadata cannot currently be loaded.
@@ -223,6 +244,11 @@ Event `objectchange` returns `{ name, newValue, newValueDataType, object, object
 By default, the picker shows user-facing standard objects plus custom and external objects. Feed, history, share, platform-event, custom-setting, and other internal read-only metadata remains available through `Show all objects`. Discovery is cacheable and respects object accessibility. Descriptors include API name, singular/plural labels, custom/queryable/searchable/custom-setting flags, and create/update/delete capabilities so consumers can filter without another metadata request. Unusable Salesforce missing-label markers fall back to the API name.
 
 The object popover shell paints before its prepared object index is filtered. Reaching the bottom of the results panel appends the next `max-results` matches, while changing the search or object filter restarts from the first batch.
+
+<figure class="doc-shot">
+  <img src="{{ '/assets/images/screenshots/Object%20Name%20Picker.png' | relative_url }}" width="1282" height="1290" loading="lazy" decoding="async" alt="Object picker displaying standard Salesforce objects and the Show all objects toggle">
+  <figcaption>The default view prioritizes normal objects; the header switch reveals every accessible object type.</figcaption>
+</figure>
 
 ## `c-flow-config-field-input`
 
