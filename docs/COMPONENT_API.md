@@ -1,3 +1,9 @@
+---
+layout: default
+title: Component API
+description: Public components, attributes, events, values, and validation contracts.
+---
+
 # Component API
 
 ## `c/flowConfigEditorBase`
@@ -156,6 +162,8 @@ The lower-level Flow resource browser.
 
 Events: `resourcechange`, with `{ name, newValue, newValueDataType, resource }`.
 
+When an empty picker or a picker holding a resource reference opens, it may emit the bubbling, composed `flowresourcerefresh` event with `{ name, currentValue, currentValueDataType }`. A custom editor can use this signal to re-report its current Flow configuration, which prompts Flow Builder to republish current automatic outputs. Committed literals skip this refresh so reopening remains immediate.
+
 When `property-name` is provided, selection and removal also dispatch the standard `configuration_editor_input_value_changed` event expected by Flow Builder. Removal uses the same event with a `null` value, which is how Flow Builder's custom property editor contract clears an input assignment.
 
 The popover shell paints before root resource derivation. Root results append another `max-results` batch when the results panel reaches the bottom; changing the query resets the visible batch.
@@ -223,6 +231,10 @@ Composes `flowConfigFieldPicker` and `flowConfigValueInput` for properties that 
 When enabled, an accessible `Custom value` switch is rendered in the shared picker header beside the breadcrumbs at the root level. It is hidden while browsing nested relationships or resources and returns after navigating back to the root. Switching replaces the field browser with the standard Flow resource/literal picker and opens it immediately. `custom-mode` is controlled so a consuming editor can persist the user's choice in its own optional Boolean Flow property. Switching modes does not clear or rewrite the current value. Event `modechange` returns `{ customMode }`; event `valuechange` returns the active child's standard value detail plus `customMode`.
 
 Public validation methods: `setCustomValidity(message)`, `reportValidity()`, and `validationMessage`.
+
+### Advanced wrapper composition
+
+`flowConfigResourcePicker`, `flowConfigValueInput`, and `flowConfigFieldPicker` also expose `mode-toggle-label` and controlled `mode-toggle-checked` attributes for framework wrappers such as `flowConfigFieldInput`. The root picker header emits `modetoggle`; nested relationship/resource levels hide the switch. These attributes are useful when building another reusable compound input, but ordinary custom property editors should prefer `flowConfigFieldInput` so mode state and events remain coordinated.
 
 ## Shared utility modules
 

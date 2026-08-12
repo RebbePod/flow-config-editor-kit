@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="{{ site.lang | default: 'en-US' }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#071a34" />
+    <meta
+      name="description"
+      content="{{ page.description | default: site.description | escape }}"
+    />
+    <title>
+      {% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}
+    </title>
+    <link
+      rel="stylesheet"
+      href="{{ '/assets/css/style.css' | relative_url }}"
+    />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <a class="brand" href="{{ '/' | relative_url }}">
+          <span class="brand__mark" aria-hidden="true">F</span>
+          <span>
+            <strong>Flow Config</strong>
+            <small>Editor Kit</small>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="{{ '/GETTING_STARTED.html' | relative_url }}">Get started</a>
+          <a href="{{ '/COMPONENT_API.html' | relative_url }}">Components</a>
+          <a href="{{ '/ARCHITECTURE.html' | relative_url }}">Architecture</a>
+          <a href="https://github.com/RebbePod/flow-config-editor-kit"
+            >GitHub</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main
+      id="content"
+      class="page-shell{% if page.home %} page-shell--home{% endif %}"
+    >
+      {{ content }}
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <strong>Flow Config Editor Kit</strong>
+        <span>Apache-2.0 licensed · Independent open-source project</span>
+      </div>
+      <nav aria-label="Footer navigation">
+        <a href="{{ '/LIMITATIONS.html' | relative_url }}">Boundaries</a>
+        <a
+          href="https://github.com/RebbePod/flow-config-editor-kit/blob/main/SECURITY.md"
+          >Security</a
+        >
+        <a
+          href="https://github.com/RebbePod/flow-config-editor-kit/blob/main/CONTRIBUTING.md"
+          >Contributing</a
+        >
+      </nav>
+    </footer>
+  </body>
+</html>

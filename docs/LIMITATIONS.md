@@ -1,3 +1,9 @@
+---
+layout: default
+title: Platform boundaries
+description: Salesforce metadata, Flow Builder, packaging, and security constraints.
+---
+
 # Known platform boundaries
 
 The framework can only discover metadata Salesforce makes available to a custom property editor or to the authenticated metadata bridge.

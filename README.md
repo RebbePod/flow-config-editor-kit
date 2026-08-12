@@ -4,6 +4,8 @@ A reusable set of Lightning Web Components for building richer custom property e
 
 The framework provides a Flow-resource picker, an SObject field picker with relationship traversal, shared picker UI, Flow Builder event helpers, schema/metadata services, validation support, and generic SObject type coordination. It is intended for developers building `configurationEditor` LWCs for Flow screen components.
 
+[Documentation](https://rebbepod.github.io/flow-config-editor-kit/) · [Getting started](docs/GETTING_STARTED.md) · [Component API](docs/COMPONENT_API.md) · [Examples](examples/README.md)
+
 > This is an independent open-source project. It is not an official Salesforce product and is not affiliated with or endorsed by Salesforce.
 
 ## Why this exists
@@ -20,6 +22,8 @@ This project packages that behavior into reusable components so each custom LWC 
 | `c-flow-config-resource-picker` | Search and browse Flow resources, globals, element outputs, records, collections, Apex-defined values, labels, and hierarchy settings.                                    |
 | `c-flow-config-value-input`     | One input that accepts either a literal or a compatible Flow resource.                                                                                                    |
 | `c-flow-config-field-picker`    | Select one or multiple fields, reorder multiple selections, and traverse SObject relationships.                                                                           |
+| `c-flow-config-object-picker`   | Search accessible Salesforce objects with a focused default view, optional all-object view, and progressive loading.                                                      |
+| `c-flow-config-field-input`     | Select an SObject field or switch to a compatible custom literal or Flow resource when the editor allows it.                                                              |
 | `c-flow-config-picker-header`   | Shared breadcrumb/header UI used by both picker experiences.                                                                                                              |
 | Utility modules                 | Normalize Flow metadata, create configuration events, resolve schema, position popovers, and coordinate generic SObject types.                                            |
 
@@ -34,7 +38,7 @@ sf package install --package <04t...> --target-org my-org --wait 20
 sf org assign permset --name Flow_Config_Editor_Access --target-org my-org
 ```
 
-Install URLs are published on each [release](../../releases). See [Packaging](docs/PACKAGING.md) to build your own version.
+Install URLs are published on each [release](https://github.com/RebbePod/flow-config-editor-kit/releases). See [Packaging](docs/PACKAGING.md) to build your own version.
 
 To work from source instead:
 
@@ -111,6 +115,7 @@ config/                    Scratch-org definition
 - Apex-defined variables and nested Aura-enabled members
 - Global variables and constants, including `$Flow`, `$User`, `$Profile`, `$UserRole`, `$Organization`, `$System`, and versioned `$Api` endpoints
 - Custom Labels and Custom Hierarchy Settings
+- Accessible Salesforce objects through the direct object picker
 - Literal String and Number values through the value input
 
 Availability is still governed by what Salesforce exposes to a custom property editor for the current Flow element and API version. See [Known platform boundaries](docs/LIMITATIONS.md).
@@ -122,11 +127,11 @@ npm ci
 npm run verify
 ```
 
-`verify` checks API-version consistency, then runs ESLint, all LWC Jest suites, coverage thresholds, and Prettier. The repository currently targets Salesforce API version 67.0 and Node 22.
+`verify` checks API-version consistency and local documentation links, then runs ESLint, all LWC Jest suites, coverage thresholds, and Prettier. The repository currently targets Salesforce API version 67.0 and Node 22.
 
 CI additionally runs Salesforce Code Analyzer, gating on Critical and High violations, and — when a `DEVHUB_SFDX_URL` secret is configured — validates that `force-app` deploys and passes its Apex tests on a scratch org independently of `examples`.
 
-Use `npm run check:dependencies` during maintenance to report newer compatible npm releases. Dependabot also checks development dependencies weekly. Review major upgrades together with their Node and peer-dependency requirements; never update the lockfile without running the full verification suite.
+Use `npm run check:dependencies` during maintenance to report newer compatible npm releases. Dependabot batches routine development-tool and GitHub Actions updates monthly while continuing to surface security fixes promptly. Major upgrades are reviewed manually with their Node and peer-dependency requirements; never update the lockfile without running the full verification suite.
 
 ## Using this with an AI coding agent
 

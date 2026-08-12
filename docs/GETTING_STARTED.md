@@ -1,3 +1,9 @@
+---
+layout: default
+title: Getting started
+description: Install the Flow Config Editor Kit and build a custom property editor.
+---
+
 # Getting started
 
 ## Prerequisites
@@ -35,7 +41,27 @@ Declare the custom property editor on the consuming component's Flow target conf
 </targetConfig>
 ```
 
-Then extend `c/flowConfigEditorBase`. It declares the four public properties Flow Builder supplies (`builderContext`, `inputVariables`, `genericTypeMappings`, `automaticOutputVariables`), plus `elementInfo` and `validate()`, so your editor only writes its own rules.
+For most editors, extend `c/flowConfigEditorBase` and declare `static flowProperties`. The base class renders the inputs, reads and writes Flow Builder configuration, coordinates dependent fields and generic SObject types, and implements validation.
+
+```js
+import FlowConfigEditorBase from "c/flowConfigEditorBase";
+
+export default class MyComponentEditor extends FlowConfigEditorBase {
+  static flowProperties = {
+    records: {
+      type: "SObject",
+      collection: true,
+      genericType: "T",
+      objectProperty: "objectApiName",
+      required: true
+    },
+    displayField: { type: "field", dependsOn: "records", required: true },
+    heading: { type: "String" }
+  };
+}
+```
+
+Use the imperative API only when the schema cannot express an editor-specific behavior such as legacy-value migration, reset notices, or conditional validation. The base declares the four public properties Flow Builder supplies (`builderContext`, `inputVariables`, `genericTypeMappings`, `automaticOutputVariables`), plus `elementInfo` and `validate()`, so your editor only writes its own rules.
 
 ```js
 import FlowConfigEditorBase from "c/flowConfigEditorBase";
@@ -93,6 +119,8 @@ If you would rather not extend the base class, `c/flowConfigEditorUtils` still e
 - Use `flowConfigValueInput` for a literal-or-resource scalar input.
 - Use `flowConfigResourcePicker` when you need precise resource type or collection filtering.
 - Use `flowConfigFieldPicker` after a record or collection selection provides an `objectApiName`.
+- Use `flowConfigFieldInput` when a field property may optionally accept a custom literal or Flow resource.
+- Use `flowConfigObjectPicker` when the Flow property itself stores an object API name rather than deriving it from a selected record resource.
 
 ## Generic record collections
 
@@ -109,5 +137,5 @@ Editors that do not extend the base can drive this themselves — every reusable
 ## Next steps
 
 - Review the complete [Component API](COMPONENT_API.md).
-- Copy integration patterns from [`examples`](../examples/README.md).
+- Copy integration patterns from the [`examples`](https://github.com/RebbePod/flow-config-editor-kit/tree/main/examples).
 - Read [Adapting the framework](ADAPTING.md) before adding resource categories or data types.

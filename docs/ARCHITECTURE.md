@@ -1,3 +1,9 @@
+---
+layout: default
+title: Architecture
+description: Framework layers, metadata services, state flow, and performance design.
+---
+
 # Architecture
 
 ## Data flow

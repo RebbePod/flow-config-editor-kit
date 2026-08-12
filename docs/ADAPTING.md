@@ -1,3 +1,9 @@
+---
+layout: default
+title: Adapting the framework
+description: Extend the kit while preserving its reusable contracts and architecture.
+---
+
 # Adapting the framework
 
 ## Build a specialized resource input
