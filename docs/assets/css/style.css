@@ -374,34 +374,28 @@ a:hover {
 
 .screenshot-grid {
   display: grid;
-  gap: 1.2rem;
-  margin-top: 3rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2.4rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .screenshot-card {
   overflow: hidden;
   margin: 0;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 14px;
   background: var(--white);
-  box-shadow: 0 16px 42px rgba(7, 26, 52, 0.08);
+  box-shadow: 0 10px 28px rgba(7, 26, 52, 0.07);
 }
 
-.screenshot-card--wide {
-  grid-column: 1 / -1;
-}
-
-.screenshot-card a {
+.screenshot-card__link {
   display: block;
-  color: var(--ink);
-  text-decoration: none;
 }
 
 .screenshot-card__frame {
   display: block;
   overflow: hidden;
-  aspect-ratio: 16 / 9;
+  height: 220px;
   border-bottom: 1px solid var(--line);
   background: #eef2f5;
 }
@@ -415,24 +409,31 @@ a:hover {
   transition: transform 180ms ease;
 }
 
-.screenshot-card a:hover img {
+.screenshot-card__link:hover img {
   transform: scale(1.012);
 }
 
 .screenshot-card figcaption {
-  display: grid;
-  gap: 0.25rem;
-  padding: 1.2rem 1.35rem 1.35rem;
+  min-height: 98px;
+  padding: 1rem 1.05rem 1.1rem;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.screenshot-card figcaption strong,
+.screenshot-card figcaption span {
+  display: block;
 }
 
 .screenshot-card figcaption span {
+  margin-top: 0.25rem;
   color: var(--muted);
-  font-size: 0.93rem;
+  font-size: 0.86rem;
 }
 
 .doc-shot,
 .doc-shot-grid {
-  margin-block: 2rem 3rem;
+  margin-block: 1.7rem 2.5rem;
 }
 
 .doc-shot-grid {
@@ -447,24 +448,48 @@ a:hover {
 
 .doc-shot {
   overflow: hidden;
+  width: min(100%, 620px);
   margin-inline: 0;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--white);
-  box-shadow: 0 12px 34px rgba(7, 26, 52, 0.08);
+  box-shadow: 0 9px 26px rgba(7, 26, 52, 0.07);
+}
+
+.doc-shot__preview {
+  display: block;
+  overflow: hidden;
+  height: 360px;
+  background: #eef2f5;
 }
 
 .doc-shot img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  transition: transform 180ms ease;
+}
+
+.doc-shot__preview:hover img {
+  transform: scale(1.01);
 }
 
 .doc-shot figcaption {
-  padding: 0.9rem 1rem 1rem;
+  padding: 0.8rem 0.9rem 0.9rem;
   border-top: 1px solid var(--line);
   color: var(--muted);
-  font-size: 0.88rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.screenshot-showcase .section-heading h2 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+}
+
+.screenshot-showcase {
+  padding-block: 4.5rem;
 }
 
 .feature-card {
@@ -650,6 +675,10 @@ a:hover {
   .site-footer {
     padding-block: 2rem;
   }
+
+  .screenshot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 600px) {
@@ -687,8 +716,12 @@ a:hover {
     grid-template-columns: 1fr;
   }
 
-  .screenshot-card--wide {
-    grid-column: auto;
+  .screenshot-card__frame {
+    height: 260px;
+  }
+
+  .doc-shot__preview {
+    height: 320px;
   }
 
   .architecture-strip {
