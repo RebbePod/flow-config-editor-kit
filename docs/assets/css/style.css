@@ -414,7 +414,7 @@ a:hover {
 }
 
 .screenshot-card figcaption {
-  min-height: 98px;
+  min-height: 130px;
   padding: 1rem 1.05rem 1.1rem;
   color: var(--ink);
   line-height: 1.4;
@@ -423,6 +423,14 @@ a:hover {
 .screenshot-card figcaption strong,
 .screenshot-card figcaption span {
   display: block;
+}
+
+.screenshot-card figcaption a {
+  display: inline-block;
+  margin-top: 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 750;
+  text-decoration: none;
 }
 
 .screenshot-card figcaption span {
@@ -579,6 +587,72 @@ a:hover {
   color: var(--mint);
 }
 
+.agent-section {
+  display: grid;
+  gap: 4rem;
+  padding-block: 6rem;
+  border-bottom: 1px solid var(--line);
+  grid-template-columns: 0.85fr 1.15fr;
+  scroll-margin-top: 96px;
+}
+
+.agent-section__intro h2 {
+  margin: 0;
+  font-size: clamp(2.25rem, 4.5vw, 3.7rem);
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.agent-section__intro > p:not(.eyebrow) {
+  margin: 1.25rem 0 0;
+  color: var(--muted);
+}
+
+.agent-paths {
+  display: grid;
+  gap: 1rem;
+}
+
+.agent-paths article {
+  padding: 1.6rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--white);
+}
+
+.agent-paths article > span {
+  color: var(--blue);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.agent-paths h3 {
+  margin: 0.55rem 0;
+  font-size: 1.35rem;
+}
+
+.agent-paths p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+.agent-paths pre {
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border-radius: 9px;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.agent-paths a {
+  font-size: 0.88rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
 .final-cta {
   display: flex;
   align-items: end;
@@ -644,7 +718,8 @@ a:hover {
 
   .hero,
   .section-heading,
-  .path-section {
+  .path-section,
+  .agent-section {
     grid-template-columns: 1fr;
   }
 
@@ -730,6 +805,11 @@ a:hover {
 
   .final-cta {
     padding-top: 4rem;
+  }
+
+  .agent-section {
+    gap: 2.5rem;
+    padding-block: 4rem;
   }
 
   .site-footer nav {

@@ -47,28 +47,28 @@ home: true
   </div>
   <div class="screenshot-grid">
     <figure class="screenshot-card">
-      <a class="screenshot-card__link" href="{{ '/COMPONENT_API/#c-flow-config-object-picker' | relative_url }}" aria-label="Read about the object picker">
+      <a class="screenshot-card__link" href="{{ '/assets/images/screenshots/Object%20Name%20Picker.png' | relative_url }}" aria-label="Open the full-size object picker screenshot">
         <span class="screenshot-card__frame">
           <img src="{{ '/assets/images/screenshots/Object%20Name%20Picker.png' | relative_url }}" width="1282" height="1290" loading="lazy" decoding="async" alt="Object picker open in Salesforce Flow Builder with standard objects and a Show all objects toggle">
         </span>
       </a>
-      <figcaption><strong>Object discovery</strong><span>Common objects first, with specialized metadata on demand.</span></figcaption>
+      <figcaption><strong>Object discovery</strong><span>Common objects first, with specialized metadata on demand.</span><a href="{{ '/COMPONENT_API/#c-flow-config-object-picker' | relative_url }}">Component details →</a></figcaption>
     </figure>
     <figure class="screenshot-card">
-      <a class="screenshot-card__link" href="{{ '/COMPONENT_API/#c-flow-config-field-picker' | relative_url }}" aria-label="Read about the field picker">
+      <a class="screenshot-card__link" href="{{ '/assets/images/screenshots/Multi%20Field%20Selection.png' | relative_url }}" aria-label="Open the full-size multi-field picker screenshot">
         <span class="screenshot-card__frame">
           <img src="{{ '/assets/images/screenshots/Multi%20Field%20Selection.png' | relative_url }}" width="1306" height="1554" loading="lazy" decoding="async" alt="Multi-field picker with selected fields, ordering controls, and relationship fields">
         </span>
       </a>
-      <figcaption><strong>Multi-field selection</strong><span>Review, reorder, remove, and browse relationships.</span></figcaption>
+      <figcaption><strong>Multi-field selection</strong><span>Review, reorder, remove, and browse relationships.</span><a href="{{ '/COMPONENT_API/#c-flow-config-field-picker' | relative_url }}">Component details →</a></figcaption>
     </figure>
     <figure class="screenshot-card">
-      <a class="screenshot-card__link" href="{{ '/COMPONENT_API/#c-flow-config-value-input' | relative_url }}" aria-label="Read about the value input">
+      <a class="screenshot-card__link" href="{{ '/assets/images/screenshots/Text%20Input%202.png' | relative_url }}" aria-label="Open the full-size Flow resource screenshot">
         <span class="screenshot-card__frame">
           <img src="{{ '/assets/images/screenshots/Text%20Input%202.png' | relative_url }}" width="1310" height="1332" loading="lazy" decoding="async" alt="Text value input browsing subflow outputs, global constants, and global variables">
         </span>
       </a>
-      <figcaption><strong>Flow resources</strong><span>Browse outputs, constants, globals, and compatible values.</span></figcaption>
+      <figcaption><strong>Flow resources</strong><span>Browse outputs, constants, globals, and compatible values.</span><a href="{{ '/COMPONENT_API/#c-flow-config-value-input' | relative_url }}">Component details →</a></figcaption>
     </figure>
   </div>
 </section>
@@ -139,6 +139,33 @@ home: true
   <div>
     <h2>Shared services</h2>
     <p>Normalize Flow metadata and cache Salesforce discovery.</p>
+  </div>
+</section>
+
+<section id="agent-setup" class="agent-section">
+  <div class="agent-section__intro">
+    <p class="eyebrow">Agent-ready documentation</p>
+    <h2>Give your coding agent the complete contract.</h2>
+    <p>Start with one purpose-built instruction file. It contains the exact metadata, component APIs, events, value formats, recipes, and constraints an agent needs.</p>
+    <a class="button button--primary" href="{{ '/llms.txt' | relative_url }}">Open llms.txt</a>
+  </div>
+  <div class="agent-paths">
+    <article>
+      <span>Using the kit</span>
+      <h3>Build a Flow editor</h3>
+      <p>Point the agent at <code>docs/llms.txt</code>, then describe the screen component and configuration inputs you need.</p>
+      <pre><code>Read docs/llms.txt, then add a custom
+property editor for my Flow component.</code></pre>
+      <a href="https://github.com/RebbePod/flow-config-editor-kit/tree/main/.agents/skills/build-flow-config-editor">Use the consumer skill →</a>
+    </article>
+    <article>
+      <span>Changing the kit</span>
+      <h3>Contribute to the framework</h3>
+      <p>Start with the repository’s contributor instructions, which route the agent to the right extension, picker-UI, and validation skills.</p>
+      <pre><code>Read AGENTS.md and load every skill
+relevant to the framework change.</code></pre>
+      <a href="https://github.com/RebbePod/flow-config-editor-kit/blob/main/AGENTS.md">Open AGENTS.md →</a>
+    </article>
   </div>
 </section>
 
