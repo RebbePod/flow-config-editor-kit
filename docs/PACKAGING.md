@@ -1,3 +1,9 @@
+---
+layout: default
+title: Packaging and releases
+description: Build, validate, promote, and publish the unlocked package safely.
+---
+
 # Packaging and releases
 
 The framework ships as a **no-namespace unlocked package**. No namespace is deliberate: consuming org code imports these components as `c/flowConfigEditorBase` and `c-flow-config-resource-picker`, and a namespace would change every one of those references for adopters.

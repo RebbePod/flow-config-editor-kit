@@ -1,0 +1,20 @@
+title: Flow Config Editor Kit
+description: Reusable Salesforce Flow custom property editor components.
+url: https://rebbepod.github.io
+baseurl: /flow-config-editor-kit
+repository: RebbePod/flow-config-editor-kit
+lang: en-US
+timezone: America/New_York
+markdown: kramdown
+highlighter: rouge
+permalink: pretty
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: true
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default

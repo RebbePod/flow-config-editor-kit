@@ -294,6 +294,14 @@ new CustomEvent("configuration_editor_generic_type_mapping_changed", {
 });
 ```
 
+When an empty resource picker or one holding a reference opens, it may also emit a bubbling, composed `flowresourcerefresh` event with:
+
+```js
+{ name, currentValue, currentValueDataType }
+```
+
+The editor may respond by re-reporting its current configuration so Flow Builder republishes current automatic outputs. A committed literal does not request this refresh.
+
 `genericTypeMappings` entries use `{ typeName, typeValue }`. `inputVariables` entries use `{ name, value, valueDataType }`. These key names differ; mixing them up is the most common bug.
 
 ---
@@ -305,6 +313,10 @@ new CustomEvent("configuration_editor_generic_type_mapping_changed", {
 ```js
 static flowProperties = { heading: { type: "String" } };
 ```
+
+### Direct object API-name picker
+
+Use `c-flow-config-object-picker` when a String property stores an object API name directly. It shows common user-facing objects by default and offers `Show all objects` for specialized accessible metadata. Its `objectchange` detail is `{ name, newValue, newValueDataType, object, objectType }`.
 
 ### Record collection driving a field picker
 

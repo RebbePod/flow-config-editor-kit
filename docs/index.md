@@ -1,0 +1,120 @@
+---
+layout: default
+title: Home
+description: Reusable Lightning Web Components for polished Salesforce Flow custom property editors.
+home: true
+---
+
+<section class="hero">
+  <div class="hero__copy">
+    <p class="eyebrow">Salesforce Flow developer framework</p>
+    <h1>Build better Flow configuration panels.</h1>
+    <p class="hero__lede">Reusable Lightning Web Components for resource, value, object, and field selection—complete with Flow Builder events, validation, metadata discovery, and accessible picker behavior.</p>
+    <div class="button-row">
+      <a class="button button--primary" href="{{ '/GETTING_STARTED.html' | relative_url }}">Get started</a>
+      <a class="button button--secondary" href="{{ '/COMPONENT_API.html' | relative_url }}">Browse components</a>
+    </div>
+    <ul class="signal-list" aria-label="Project baselines">
+      <li>Salesforce API 67.0</li>
+      <li>Node 22</li>
+      <li>Apache-2.0</li>
+    </ul>
+  </div>
+  <div class="hero__panel" aria-label="Declarative editor example">
+    <div class="code-window__bar"><span></span><span></span><span></span></div>
+    <pre><code><span class="code-keyword">export default class</span> MyEditor
+  <span class="code-keyword">extends</span> FlowConfigEditorBase {
+  <span class="code-keyword">static</span> flowProperties = {
+    records: {
+      type: <span class="code-string">"SObject"</span>,
+      collection: <span class="code-boolean">true</span>,
+      genericType: <span class="code-string">"T"</span>
+    },
+    displayField: {
+      type: <span class="code-string">"field"</span>,
+      dependsOn: <span class="code-string">"records"</span>
+    }
+  };
+}</code></pre>
+  </div>
+</section>
+
+<section class="section-block">
+  <div class="section-heading">
+    <p class="eyebrow">The useful parts are already built</p>
+    <h2>One coherent picker system</h2>
+    <p>Every control shares the same resource model, interaction rules, validation language, progressive loading, and viewport-aware popover behavior.</p>
+  </div>
+  <div class="feature-grid">
+    <article class="feature-card">
+      <span class="feature-card__index">01</span>
+      <h3>Flow resources</h3>
+      <p>Search variables, globals, records, collections, screen outputs, actions, subflows, labels, settings, and Apex-defined values.</p>
+    </article>
+    <article class="feature-card">
+      <span class="feature-card__index">02</span>
+      <h3>Fields and relationships</h3>
+      <p>Choose one field or many, traverse relationships, control ordering, and optionally switch to a custom Flow value.</p>
+    </article>
+    <article class="feature-card">
+      <span class="feature-card__index">03</span>
+      <h3>Salesforce objects</h3>
+      <p>Discover accessible objects with a focused default list, an all-object toggle, searchable labels, and progressive results.</p>
+    </article>
+    <article class="feature-card">
+      <span class="feature-card__index">04</span>
+      <h3>Flow-native contracts</h3>
+      <p>Persist exact reference syntax, coordinate generic SObject mappings, dispatch standard configuration events, and report contextual errors.</p>
+    </article>
+  </div>
+</section>
+
+<section class="path-section">
+  <div>
+    <p class="eyebrow">Choose the right level</p>
+    <h2>Declarative first. Imperative when needed.</h2>
+  </div>
+  <div class="path-grid">
+    <article>
+      <p class="path-label">Start here</p>
+      <h3>Schema-driven editor</h3>
+      <p>Declare common String, Number, SObject collection, and dependent field properties. The base class renders and coordinates the complete editor.</p>
+      <a href="{{ '/GETTING_STARTED.html' | relative_url }}">Build your first editor →</a>
+    </article>
+    <article>
+      <p class="path-label">Extend carefully</p>
+      <h3>Composable component API</h3>
+      <p>Use individual pickers and inherited methods for migration, reset notices, conditional rules, or other behavior outside the schema.</p>
+      <a href="{{ '/COMPONENT_API.html' | relative_url }}">Read the public API →</a>
+    </article>
+  </div>
+</section>
+
+<section class="architecture-strip">
+  <div>
+    <p class="eyebrow">Designed for reuse</p>
+    <h2>Consumer editor</h2>
+    <p>Owns only its properties and business rules.</p>
+  </div>
+  <span aria-hidden="true">→</span>
+  <div>
+    <h2>Framework components</h2>
+    <p>Own picker presentation, interaction, events, and validation.</p>
+  </div>
+  <span aria-hidden="true">→</span>
+  <div>
+    <h2>Shared services</h2>
+    <p>Normalize Flow metadata and cache Salesforce discovery.</p>
+  </div>
+</section>
+
+<section class="final-cta">
+  <div>
+    <p class="eyebrow">Ready to build?</p>
+    <h2>Deploy the core. Keep your editor small.</h2>
+  </div>
+  <div class="button-row">
+    <a class="button button--primary" href="{{ '/GETTING_STARTED.html' | relative_url }}">Installation guide</a>
+    <a class="button button--secondary" href="https://github.com/RebbePod/flow-config-editor-kit/tree/main/examples">View examples</a>
+  </div>
+</section>
