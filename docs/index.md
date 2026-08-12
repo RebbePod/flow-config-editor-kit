@@ -11,8 +11,8 @@ home: true
     <h1>Build better Flow configuration panels.</h1>
     <p class="hero__lede">Reusable Lightning Web Components for resource, value, object, and field selection—complete with Flow Builder events, validation, metadata discovery, and accessible picker behavior.</p>
     <div class="button-row">
-      <a class="button button--primary" href="{{ '/GETTING_STARTED.html' | relative_url }}">Get started</a>
-      <a class="button button--secondary" href="{{ '/COMPONENT_API.html' | relative_url }}">Browse components</a>
+      <a class="button button--primary" href="{{ '/GETTING_STARTED/' | relative_url }}">Get started</a>
+      <a class="button button--secondary" href="{{ '/COMPONENT_API/' | relative_url }}">Browse components</a>
     </div>
     <ul class="signal-list" aria-label="Project baselines">
       <li>Salesforce API 67.0</li>
@@ -79,13 +79,13 @@ home: true
       <p class="path-label">Start here</p>
       <h3>Schema-driven editor</h3>
       <p>Declare common String, Number, SObject collection, and dependent field properties. The base class renders and coordinates the complete editor.</p>
-      <a href="{{ '/GETTING_STARTED.html' | relative_url }}">Build your first editor →</a>
+      <a href="{{ '/GETTING_STARTED/' | relative_url }}">Build your first editor →</a>
     </article>
     <article>
       <p class="path-label">Extend carefully</p>
       <h3>Composable component API</h3>
       <p>Use individual pickers and inherited methods for migration, reset notices, conditional rules, or other behavior outside the schema.</p>
-      <a href="{{ '/COMPONENT_API.html' | relative_url }}">Read the public API →</a>
+      <a href="{{ '/COMPONENT_API/' | relative_url }}">Read the public API →</a>
     </article>
   </div>
 </section>
@@ -114,7 +114,7 @@ home: true
     <h2>Deploy the core. Keep your editor small.</h2>
   </div>
   <div class="button-row">
-    <a class="button button--primary" href="{{ '/GETTING_STARTED.html' | relative_url }}">Installation guide</a>
+    <a class="button button--primary" href="{{ '/GETTING_STARTED/' | relative_url }}">Installation guide</a>
     <a class="button button--secondary" href="https://github.com/RebbePod/flow-config-editor-kit/tree/main/examples">View examples</a>
   </div>
 </section>
