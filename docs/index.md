@@ -47,28 +47,28 @@ home: true
   </div>
   <div class="screenshot-grid">
     <figure class="screenshot-card">
-      <a class="screenshot-card__link" href="{{ '/COMPONENT_API/#c-flow-config-object-picker' | relative_url }}" aria-label="Read about the object picker">
+      <a class="screenshot-card__link" href="{{ '/assets/images/screenshots/Object%20Name%20Picker.png' | relative_url }}" aria-label="Open the full-size object picker screenshot">
         <span class="screenshot-card__frame">
           <img src="{{ '/assets/images/screenshots/Object%20Name%20Picker.png' | relative_url }}" width="1282" height="1290" loading="lazy" decoding="async" alt="Object picker open in Salesforce Flow Builder with standard objects and a Show all objects toggle">
         </span>
       </a>
-      <figcaption><strong>Object discovery</strong><span>Common objects first, with specialized metadata on demand.</span></figcaption>
+      <figcaption><strong>Object discovery</strong><span>Common objects first, with specialized metadata on demand.</span><a href="{{ '/COMPONENT_API/#c-flow-config-object-picker' | relative_url }}">Component details →</a></figcaption>
     </figure>
     <figure class="screenshot-card">
-      <a class="screenshot-card__link" href="{{ '/COMPONENT_API/#c-flow-config-field-picker' | relative_url }}" aria-label="Read about the field picker">
+      <a class="screenshot-card__link" href="{{ '/assets/images/screenshots/Multi%20Field%20Selection.png' | relative_url }}" aria-label="Open the full-size multi-field picker screenshot">
         <span class="screenshot-card__frame">
           <img src="{{ '/assets/images/screenshots/Multi%20Field%20Selection.png' | relative_url }}" width="1306" height="1554" loading="lazy" decoding="async" alt="Multi-field picker with selected fields, ordering controls, and relationship fields">
         </span>
       </a>
-      <figcaption><strong>Multi-field selection</strong><span>Review, reorder, remove, and browse relationships.</span></figcaption>
+      <figcaption><strong>Multi-field selection</strong><span>Review, reorder, remove, and browse relationships.</span><a href="{{ '/COMPONENT_API/#c-flow-config-field-picker' | relative_url }}">Component details →</a></figcaption>
     </figure>
     <figure class="screenshot-card">
-      <a class="screenshot-card__link" href="{{ '/COMPONENT_API/#c-flow-config-value-input' | relative_url }}" aria-label="Read about the value input">
+      <a class="screenshot-card__link" href="{{ '/assets/images/screenshots/Text%20Input%202.png' | relative_url }}" aria-label="Open the full-size Flow resource screenshot">
         <span class="screenshot-card__frame">
           <img src="{{ '/assets/images/screenshots/Text%20Input%202.png' | relative_url }}" width="1310" height="1332" loading="lazy" decoding="async" alt="Text value input browsing subflow outputs, global constants, and global variables">
         </span>
       </a>
-      <figcaption><strong>Flow resources</strong><span>Browse outputs, constants, globals, and compatible values.</span></figcaption>
+      <figcaption><strong>Flow resources</strong><span>Browse outputs, constants, globals, and compatible values.</span><a href="{{ '/COMPONENT_API/#c-flow-config-value-input' | relative_url }}">Component details →</a></figcaption>
     </figure>
   </div>
 </section>

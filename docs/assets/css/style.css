@@ -414,7 +414,7 @@ a:hover {
 }
 
 .screenshot-card figcaption {
-  min-height: 98px;
+  min-height: 130px;
   padding: 1rem 1.05rem 1.1rem;
   color: var(--ink);
   line-height: 1.4;
@@ -423,6 +423,14 @@ a:hover {
 .screenshot-card figcaption strong,
 .screenshot-card figcaption span {
   display: block;
+}
+
+.screenshot-card figcaption a {
+  display: inline-block;
+  margin-top: 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 750;
+  text-decoration: none;
 }
 
 .screenshot-card figcaption span {
