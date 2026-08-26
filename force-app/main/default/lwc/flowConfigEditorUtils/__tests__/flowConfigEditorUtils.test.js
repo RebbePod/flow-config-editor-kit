@@ -221,6 +221,59 @@ describe("flowConfigEditorUtils", () => {
     ).toBe("Contact");
   });
 
+  it("infers chained processor objects independently of array order", () => {
+    const resources = collectFlowResources({
+      recordLookups: [
+        { name: "Get_Accounts", object: "Account", getFirstRecordOnly: false }
+      ],
+      collectionProcessors: [
+        {
+          name: "Sorted_Accounts",
+          elementSubtype: "SortCollectionProcessor",
+          collectionReference: "{!Filtered_Accounts}"
+        },
+        {
+          name: "Filtered_Accounts",
+          elementSubtype: "FilterCollectionProcessor",
+          collectionReference: "{!Get_Accounts}"
+        }
+      ]
+    });
+
+    expect(
+      resources.find((resource) => resource.reference === "{!Sorted_Accounts}")
+        .objectType
+    ).toBe("Account");
+    expect(
+      resources.find(
+        (resource) => resource.reference === "{!Filtered_Accounts}"
+      ).objectType
+    ).toBe("Account");
+  });
+
+  it("tolerates cyclical collection processor references", () => {
+    const resources = collectFlowResources({
+      collectionProcessors: [
+        {
+          name: "First_Processor",
+          elementSubtype: "FilterCollectionProcessor",
+          collectionReference: "{!Second_Processor}"
+        },
+        {
+          name: "Second_Processor",
+          elementSubtype: "SortCollectionProcessor",
+          collectionReference: "{!First_Processor}"
+        }
+      ]
+    });
+
+    expect(
+      resources
+        .filter((resource) => resource.name.endsWith("_Processor"))
+        .map((resource) => resource.objectType)
+    ).toEqual([null, null]);
+  });
+
   it("tolerates a collection processor with no name", () => {
     expect(() =>
       collectFlowResources({

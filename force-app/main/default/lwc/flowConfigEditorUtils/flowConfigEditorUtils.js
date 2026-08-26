@@ -297,17 +297,45 @@ function collectionProcessorSource(processor) {
 }
 
 /**
- * Object of an already-collected resource, by reference. Lets an element inherit
- * the object of the collection it operates on.
+ * Resolves a CollectionProcessor's output object through the collection it
+ * consumes. Flow doesn't guarantee processor array order, so chained processors
+ * are followed through the complete name map instead of only previously added
+ * resources.
  */
-function objectTypeOfReference(resources, reference) {
-  if (!reference) {
+function collectionProcessorObjectType(
+  processor,
+  processorsByName,
+  objectTypesByName,
+  resolving = new Set()
+) {
+  const processorName = processor?.name || processor?.apiName;
+  const declaredObjectType = typeToken(processor?.outputSObjectType);
+  if (declaredObjectType) {
+    if (processorName) {
+      objectTypesByName.set(processorName, declaredObjectType);
+    }
+    return declaredObjectType;
+  }
+  if (!processorName || resolving.has(processorName)) {
     return null;
   }
-  const name = String(reference).replace(/^\{!/, "").replace(/\}$/, "");
-  return (
-    resources.find((resource) => resource.name === name)?.objectType || null
-  );
+
+  resolving.add(processorName);
+  const inputName = fromFlowReference(processor.collectionReference);
+  const objectType =
+    objectTypesByName.get(inputName) ||
+    collectionProcessorObjectType(
+      processorsByName.get(inputName),
+      processorsByName,
+      objectTypesByName,
+      resolving
+    );
+  resolving.delete(processorName);
+
+  if (objectType) {
+    objectTypesByName.set(processorName, objectType);
+  }
+  return objectType || null;
 }
 
 function addResource(resources, seen, resource) {
@@ -434,7 +462,18 @@ export function collectFlowResources(builderContext = {}, apiVersion) {
 
   // Collection Filter and Collection Sort. Flow stores both as CollectionProcessor
   // elements, each producing a collection of the same object as its input.
-  asArray(builderContext.collectionProcessors).forEach((processor) => {
+  const collectionProcessors = asArray(builderContext.collectionProcessors);
+  const processorsByName = new Map(
+    collectionProcessors
+      .filter((processor) => processor?.name || processor?.apiName)
+      .map((processor) => [processor.name || processor.apiName, processor])
+  );
+  const objectTypesByName = new Map(
+    resources
+      .filter((resource) => resource.name && resource.objectType)
+      .map((resource) => [resource.name, resource.objectType])
+  );
+  collectionProcessors.forEach((processor) => {
     const processorName = processor?.name || processor?.apiName;
     if (!processorName) {
       return;
@@ -450,10 +489,12 @@ export function collectFlowResources(builderContext = {}, apiVersion) {
           dataType: "SObject",
           // A CollectionProcessor names its output object directly; older or
           // partial metadata may not, so fall back to the object of the
-          // collection it was given.
-          objectType:
-            processor.outputSObjectType ||
-            objectTypeOfReference(resources, processor.collectionReference),
+          // collection it was given, including through chained processors.
+          objectType: collectionProcessorObjectType(
+            processor,
+            processorsByName,
+            objectTypesByName
+          ),
           isCollection: true,
           category: collectionProcessorSource(processor)
         }
