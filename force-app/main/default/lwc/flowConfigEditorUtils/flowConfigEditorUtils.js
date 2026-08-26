@@ -284,6 +284,60 @@ function getNestedOutputs(element) {
   return outputs;
 }
 
+/** Element type of a CollectionProcessor, used as its picker group. */
+function collectionProcessorSource(processor) {
+  const subtype = String(processor?.elementSubtype || "");
+  if (subtype.startsWith("Filter")) {
+    return "Collection Filter";
+  }
+  if (subtype.startsWith("Sort")) {
+    return "Collection Sort";
+  }
+  return "Collection Processor";
+}
+
+/**
+ * Resolves a CollectionProcessor's output object through the collection it
+ * consumes. Flow doesn't guarantee processor array order, so chained processors
+ * are followed through the complete name map instead of only previously added
+ * resources.
+ */
+function collectionProcessorObjectType(
+  processor,
+  processorsByName,
+  objectTypesByName,
+  resolving = new Set()
+) {
+  const processorName = processor?.name || processor?.apiName;
+  const declaredObjectType = typeToken(processor?.outputSObjectType);
+  if (declaredObjectType) {
+    if (processorName) {
+      objectTypesByName.set(processorName, declaredObjectType);
+    }
+    return declaredObjectType;
+  }
+  if (!processorName || resolving.has(processorName)) {
+    return null;
+  }
+
+  resolving.add(processorName);
+  const inputName = fromFlowReference(processor.collectionReference);
+  const objectType =
+    objectTypesByName.get(inputName) ||
+    collectionProcessorObjectType(
+      processorsByName.get(inputName),
+      processorsByName,
+      objectTypesByName,
+      resolving
+    );
+  resolving.delete(processorName);
+
+  if (objectType) {
+    objectTypesByName.set(processorName, objectType);
+  }
+  return objectType || null;
+}
+
 function addResource(resources, seen, resource) {
   if (!resource || seen.has(resource.reference)) {
     return;
@@ -403,6 +457,48 @@ export function collectFlowResources(builderContext = {}, apiVersion) {
         isCollection,
         category: "Record Variables"
       })
+    );
+  });
+
+  // Collection Filter and Collection Sort. Flow stores both as CollectionProcessor
+  // elements, each producing a collection of the same object as its input.
+  const collectionProcessors = asArray(builderContext.collectionProcessors);
+  const processorsByName = new Map(
+    collectionProcessors
+      .filter((processor) => processor?.name || processor?.apiName)
+      .map((processor) => [processor.name || processor.apiName, processor])
+  );
+  const objectTypesByName = new Map(
+    resources
+      .filter((resource) => resource.name && resource.objectType)
+      .map((resource) => [resource.name, resource.objectType])
+  );
+  collectionProcessors.forEach((processor) => {
+    const processorName = processor?.name || processor?.apiName;
+    if (!processorName) {
+      return;
+    }
+    addResource(
+      resources,
+      seen,
+      normalizeResource(
+        processor,
+        collectionProcessorSource(processor),
+        processorName,
+        {
+          dataType: "SObject",
+          // A CollectionProcessor names its output object directly; older or
+          // partial metadata may not, so fall back to the object of the
+          // collection it was given, including through chained processors.
+          objectType: collectionProcessorObjectType(
+            processor,
+            processorsByName,
+            objectTypesByName
+          ),
+          isCollection: true,
+          category: collectionProcessorSource(processor)
+        }
+      )
     );
   });
 
