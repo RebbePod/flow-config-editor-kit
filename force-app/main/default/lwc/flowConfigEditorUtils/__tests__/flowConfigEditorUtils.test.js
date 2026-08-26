@@ -165,4 +165,70 @@ describe("flowConfigEditorUtils", () => {
     expect(getInputValue(variables, "records")).toBe("{!Accounts}");
     expect(getInputValue(variables, "missing", "fallback")).toBe("fallback");
   });
+
+  it("offers Collection Filter and Collection Sort outputs", () => {
+    const resources = collectFlowResources({
+      recordLookups: [
+        { name: "Get_Accounts", object: "Account", getFirstRecordOnly: false }
+      ],
+      collectionProcessors: [
+        {
+          name: "Filtered_Accounts",
+          elementSubtype: "FilterCollectionProcessor",
+          collectionReference: "{!Get_Accounts}",
+          outputSObjectType: "Account"
+        },
+        {
+          name: "Sorted_Accounts",
+          elementSubtype: "SortCollectionProcessor",
+          collectionReference: "{!Get_Accounts}",
+          outputSObjectType: "Account"
+        }
+      ]
+    });
+
+    const filtered = resources.find(
+      (resource) => resource.reference === "{!Filtered_Accounts}"
+    );
+    expect(filtered.dataType).toBe("SObject");
+    expect(filtered.objectType).toBe("Account");
+    expect(filtered.isCollection).toBe(true);
+    expect(filtered.category).toBe("Collection Filter");
+    expect(
+      resources.find((resource) => resource.reference === "{!Sorted_Accounts}")
+        .category
+    ).toBe("Collection Sort");
+  });
+
+  it("infers a collection processor's object from its input collection", () => {
+    const resources = collectFlowResources({
+      recordLookups: [
+        { name: "Get_Contacts", object: "Contact", getFirstRecordOnly: false }
+      ],
+      collectionProcessors: [
+        {
+          name: "Filtered_Contacts",
+          elementSubtype: "FilterCollectionProcessor",
+          collectionReference: "{!Get_Contacts}"
+        }
+      ]
+    });
+
+    expect(
+      resources.find(
+        (resource) => resource.reference === "{!Filtered_Contacts}"
+      ).objectType
+    ).toBe("Contact");
+  });
+
+  it("tolerates a collection processor with no name", () => {
+    expect(() =>
+      collectFlowResources({
+        collectionProcessors: [
+          { elementSubtype: "FilterCollectionProcessor" },
+          null
+        ]
+      })
+    ).not.toThrow();
+  });
 });

@@ -163,4 +163,26 @@ describe("flowConfigResourceModel", () => {
       })
     ).toContain("recordcount");
   });
+
+  it("groups collection processors ahead of record variables", () => {
+    const groups = groupResourceOptions({
+      topLevelResources: [
+        { name: "Get_Accounts", category: "Record Variables" },
+        { name: "Filtered", category: "Collection Filter" },
+        { name: "Sorted", category: "Collection Sort" }
+      ],
+      automaticContainers: [],
+      screenContainers: [],
+      globalContainers: []
+    });
+
+    // Flow's own picker lists Collection Filter before Get Records, whose
+    // outputs this model keeps under Record Variables. An unrecognized category
+    // would instead sort last.
+    expect(groups.map(([label]) => label)).toEqual([
+      "Collection Filter",
+      "Collection Sort",
+      "Record Variables"
+    ]);
+  });
 });

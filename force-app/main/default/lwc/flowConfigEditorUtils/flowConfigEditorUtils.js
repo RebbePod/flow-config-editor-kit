@@ -284,6 +284,32 @@ function getNestedOutputs(element) {
   return outputs;
 }
 
+/** Element type of a CollectionProcessor, used as its picker group. */
+function collectionProcessorSource(processor) {
+  const subtype = String(processor?.elementSubtype || "");
+  if (subtype.startsWith("Filter")) {
+    return "Collection Filter";
+  }
+  if (subtype.startsWith("Sort")) {
+    return "Collection Sort";
+  }
+  return "Collection Processor";
+}
+
+/**
+ * Object of an already-collected resource, by reference. Lets an element inherit
+ * the object of the collection it operates on.
+ */
+function objectTypeOfReference(resources, reference) {
+  if (!reference) {
+    return null;
+  }
+  const name = String(reference).replace(/^\{!/, "").replace(/\}$/, "");
+  return (
+    resources.find((resource) => resource.name === name)?.objectType || null
+  );
+}
+
 function addResource(resources, seen, resource) {
   if (!resource || seen.has(resource.reference)) {
     return;
@@ -403,6 +429,35 @@ export function collectFlowResources(builderContext = {}, apiVersion) {
         isCollection,
         category: "Record Variables"
       })
+    );
+  });
+
+  // Collection Filter and Collection Sort. Flow stores both as CollectionProcessor
+  // elements, each producing a collection of the same object as its input.
+  asArray(builderContext.collectionProcessors).forEach((processor) => {
+    const processorName = processor?.name || processor?.apiName;
+    if (!processorName) {
+      return;
+    }
+    addResource(
+      resources,
+      seen,
+      normalizeResource(
+        processor,
+        collectionProcessorSource(processor),
+        processorName,
+        {
+          dataType: "SObject",
+          // A CollectionProcessor names its output object directly; older or
+          // partial metadata may not, so fall back to the object of the
+          // collection it was given.
+          objectType:
+            processor.outputSObjectType ||
+            objectTypeOfReference(resources, processor.collectionReference),
+          isCollection: true,
+          category: collectionProcessorSource(processor)
+        }
+      )
     );
   });
 
