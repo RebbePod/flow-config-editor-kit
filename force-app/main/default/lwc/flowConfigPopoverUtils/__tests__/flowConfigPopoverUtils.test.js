@@ -140,9 +140,45 @@ describe("flowConfigPopoverUtils", () => {
     expect(frames).toHaveLength(1);
     frames.shift()();
     expect(handler).toHaveBeenCalledTimes(1);
+    // Each frame queues the next while the picker is open, so the popover keeps
+    // following its anchor. Coalescing is unchanged: one measurement per frame.
+    expect(frames).toHaveLength(1);
 
     controller.disconnect();
+    expect(window.cancelAnimationFrame).toHaveBeenCalled();
+    frames.length = 0;
     window.dispatchEvent(new CustomEvent("resize"));
+    expect(frames).toHaveLength(0);
+  });
+
+  it("follows the anchor every frame while open, and stops on disconnect", () => {
+    // Scroll events cannot cross a shadow boundary, so a consuming component's own
+    // scrolling panel -- and Flow Builder's property panel, whose scroller sits
+    // inside Flow Builder's shadow root -- are invisible to the window listener.
+    // Measuring per frame is what keeps the popover attached in those contexts.
+    const frames = [];
+    window.requestAnimationFrame = jest.fn((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    window.cancelAnimationFrame = jest.fn();
+    const handler = jest.fn();
+    const controller = createPopoverViewportController(handler);
+
+    controller.setActive(true);
+    expect(frames).toHaveLength(1);
+
+    // Three frames with no scroll or resize event at all: the handler still runs,
+    // which is the whole point -- nothing observable fired.
+    for (let pass = 0; pass < 3; pass += 1) {
+      frames.shift()();
+    }
+    expect(handler).toHaveBeenCalledTimes(3);
+    expect(frames).toHaveLength(1);
+
+    controller.setActive(false);
+    frames.length = 0;
+    expect(handler).toHaveBeenCalledTimes(3);
     expect(frames).toHaveLength(0);
   });
 

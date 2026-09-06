@@ -53,11 +53,45 @@ export function removePopoverViewportListeners(handler) {
 export function createPopoverViewportController(handler) {
   let active = false;
   let frame = null;
+  let arming = false;
   const run = () => {
     frame = null;
-    if (active) {
-      handler();
+    if (!active) {
+      return;
     }
+    handler();
+    // Keep following the anchor for as long as the picker is open.
+    //
+    // A `scroll` listener on `window` cannot see every scroll that moves an anchor.
+    // `scroll` is not composed, so it never crosses a shadow boundary: not from a
+    // consuming component's own scrolling panel, and not from Flow Builder's
+    // property panel, whose scroller sits inside Flow Builder's shadow root.
+    // Measuring once per frame covers both, plus anything else that moves the
+    // anchor, without walking ancestors across shadow boundaries.
+    //
+    // The cost is one measurement per frame while open, which is the budget this
+    // controller already spends during a scroll: `positionAnchoredPopover` returns
+    // the same style string when nothing moved, so an idle popover writes no DOM.
+    //
+    // Re-armed here rather than through `schedule` so the follow loop is confined
+    // to the animation-frame path. `schedule`'s promise fallback exists for
+    // environments without `requestAnimationFrame`, and re-entering it would spin
+    // microtasks.
+    //
+    // `arming` guards re-entrancy. A synchronous `requestAnimationFrame` -- a shim,
+    // or a test double -- invokes this callback before the request returns, which
+    // without the guard is unbounded recursion rather than a loop.
+    if (arming || typeof window.requestAnimationFrame !== "function") {
+      return;
+    }
+    arming = true;
+    frame = true;
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    const requestId = window.requestAnimationFrame(run);
+    if (frame === true) {
+      frame = requestId;
+    }
+    arming = false;
   };
   const schedule = () => {
     if (!active || frame !== null) {
@@ -83,6 +117,7 @@ export function createPopoverViewportController(handler) {
     active = shouldBeActive;
     if (active) {
       addPopoverViewportListeners(schedule);
+      schedule();
       return;
     }
     removePopoverViewportListeners(schedule);
