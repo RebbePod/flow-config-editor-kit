@@ -291,8 +291,18 @@ describe("c-flow-config-resource-picker", () => {
       element.shadowRoot.querySelector(".results__empty").textContent
     ).toBe("Loading resources…");
 
-    frames.shift()(16);
-    await flushPromises();
+    // The viewport controller now measures once per frame while a picker is open,
+    // so it shares this queue and a given frame no longer belongs to a known
+    // controller. Drain whole rounds rather than assuming the scheduling order;
+    // progressive rendering's own two-frame contract is asserted directly in
+    // flowConfigPopoverUtils' tests.
+    const drainFrames = async () => {
+      frames.splice(0, frames.length).forEach((callback) => callback(16));
+      await flushPromises();
+    };
+    await drainFrames();
+    await drainFrames();
+
     expect(element.shadowRoot.querySelector(".results__empty")).toBeNull();
     expect(
       element.shadowRoot.querySelector("button.result").textContent

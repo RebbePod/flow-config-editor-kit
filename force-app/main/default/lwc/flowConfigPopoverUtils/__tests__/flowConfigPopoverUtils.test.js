@@ -2,7 +2,8 @@ import {
   createPopoverViewportController,
   createProgressiveRenderController,
   createPopoverState,
-  positionAnchoredPopover
+  positionAnchoredPopover,
+  rememberInputBoxHeight
 } from "c/flowConfigPopoverUtils";
 
 function elementWithRect(rect, scrollHeight = 0) {
@@ -36,6 +37,38 @@ describe("flowConfigPopoverUtils", () => {
     expect(positioned.state.openAbove).toBe(true);
     expect(positioned.style).toContain("height:416px");
     expect(positioned.style).toContain("top:180px");
+  });
+
+  it("anchors below the input box, not the host's validation message", () => {
+    const positioned = positionAnchoredPopover({
+      anchor: elementWithRect({ left: 100, top: 100, bottom: 152, width: 400 }),
+      anchorBoxHeight: 32,
+      popover: elementWithRect({ width: 0 }),
+      header: elementWithRect({ height: 36 }, 36),
+      scrollArea: elementWithRect({}, 500),
+      viewportWidth: 1000,
+      viewportHeight: 900
+    });
+
+    expect(positioned.state.openAbove).toBe(false);
+    expect(positioned.style).toContain("top:136px");
+  });
+
+  it("remembers the input's height from before its message appeared", () => {
+    const box = rememberInputBoxHeight(
+      undefined,
+      elementWithRect({ height: 32 })
+    );
+    const withMessage = rememberInputBoxHeight(
+      box,
+      elementWithRect({ height: 52 })
+    );
+    const hidden = rememberInputBoxHeight(
+      withMessage,
+      elementWithRect({ height: 0 })
+    );
+
+    expect([box, withMessage, hidden]).toEqual([32, 32, 32]);
   });
 
   it("adds an actions panel above the normal results height when space permits", () => {
@@ -140,9 +173,45 @@ describe("flowConfigPopoverUtils", () => {
     expect(frames).toHaveLength(1);
     frames.shift()();
     expect(handler).toHaveBeenCalledTimes(1);
+    // Each frame queues the next while the picker is open, so the popover keeps
+    // following its anchor. Coalescing is unchanged: one measurement per frame.
+    expect(frames).toHaveLength(1);
 
     controller.disconnect();
+    expect(window.cancelAnimationFrame).toHaveBeenCalled();
+    frames.length = 0;
     window.dispatchEvent(new CustomEvent("resize"));
+    expect(frames).toHaveLength(0);
+  });
+
+  it("follows the anchor every frame while open, and stops on disconnect", () => {
+    // Scroll events cannot cross a shadow boundary, so a consuming component's own
+    // scrolling panel -- and Flow Builder's property panel, whose scroller sits
+    // inside Flow Builder's shadow root -- are invisible to the window listener.
+    // Measuring per frame is what keeps the popover attached in those contexts.
+    const frames = [];
+    window.requestAnimationFrame = jest.fn((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    window.cancelAnimationFrame = jest.fn();
+    const handler = jest.fn();
+    const controller = createPopoverViewportController(handler);
+
+    controller.setActive(true);
+    expect(frames).toHaveLength(1);
+
+    // Three frames with no scroll or resize event at all: the handler still runs,
+    // which is the whole point -- nothing observable fired.
+    for (let pass = 0; pass < 3; pass += 1) {
+      frames.shift()();
+    }
+    expect(handler).toHaveBeenCalledTimes(3);
+    expect(frames).toHaveLength(1);
+
+    controller.setActive(false);
+    frames.length = 0;
+    expect(handler).toHaveBeenCalledTimes(3);
     expect(frames).toHaveLength(0);
   });
 

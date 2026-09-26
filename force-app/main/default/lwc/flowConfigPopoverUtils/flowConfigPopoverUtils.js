@@ -53,11 +53,45 @@ export function removePopoverViewportListeners(handler) {
 export function createPopoverViewportController(handler) {
   let active = false;
   let frame = null;
+  let arming = false;
   const run = () => {
     frame = null;
-    if (active) {
-      handler();
+    if (!active) {
+      return;
     }
+    handler();
+    // Keep following the anchor for as long as the picker is open.
+    //
+    // A `scroll` listener on `window` cannot see every scroll that moves an anchor.
+    // `scroll` is not composed, so it never crosses a shadow boundary: not from a
+    // consuming component's own scrolling panel, and not from Flow Builder's
+    // property panel, whose scroller sits inside Flow Builder's shadow root.
+    // Measuring once per frame covers both, plus anything else that moves the
+    // anchor, without walking ancestors across shadow boundaries.
+    //
+    // The cost is one measurement per frame while open, which is the budget this
+    // controller already spends during a scroll: `positionAnchoredPopover` returns
+    // the same style string when nothing moved, so an idle popover writes no DOM.
+    //
+    // Re-armed here rather than through `schedule` so the follow loop is confined
+    // to the animation-frame path. `schedule`'s promise fallback exists for
+    // environments without `requestAnimationFrame`, and re-entering it would spin
+    // microtasks.
+    //
+    // `arming` guards re-entrancy. A synchronous `requestAnimationFrame` -- a shim,
+    // or a test double -- invokes this callback before the request returns, which
+    // without the guard is unbounded recursion rather than a loop.
+    if (arming || typeof window.requestAnimationFrame !== "function") {
+      return;
+    }
+    arming = true;
+    frame = true;
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    const requestId = window.requestAnimationFrame(run);
+    if (frame === true) {
+      frame = requestId;
+    }
+    arming = false;
   };
   const schedule = () => {
     if (!active || frame !== null) {
@@ -83,6 +117,7 @@ export function createPopoverViewportController(handler) {
     active = shouldBeActive;
     if (active) {
       addPopoverViewportListeners(schedule);
+      schedule();
       return;
     }
     removePopoverViewportListeners(schedule);
@@ -145,6 +180,38 @@ function measuredHeight(element) {
   );
 }
 
+/**
+ * Returns the smallest height a picker's search input has had.
+ *
+ * A `lightning-input` host also contains its validation message, and the message
+ * lives in the input's shadow root, where a picker cannot measure it. The host only
+ * grows when that message appears, so its smallest height is the input box alone.
+ * In Flow Builder the popover opens on focus, before a required message can show,
+ * so the first measurement is already the box.
+ */
+export function rememberInputBoxHeight(rememberedHeight, input) {
+  const height = input?.getBoundingClientRect().height;
+  return height && !(rememberedHeight <= height) ? height : rememberedHeight;
+}
+
+/**
+ * Anchors to the input box rather than the whole host, so the popover covers
+ * "Complete this field." instead of dropping below it, which is where
+ * `lightning-base-combobox` attaches its own dropdown.
+ */
+function fieldBoxRect(anchor, boxHeight) {
+  const rect = anchor.getBoundingClientRect();
+  if (!boxHeight || boxHeight >= rect.height) {
+    return rect;
+  }
+  return {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    bottom: rect.top + boxHeight
+  };
+}
+
 function resetCorrections(state, anchorSignature, openAbove) {
   return {
     ...createPopoverState(),
@@ -164,6 +231,7 @@ function resetCorrections(state, anchorSignature, openAbove) {
  */
 export function positionAnchoredPopover({
   anchor,
+  anchorBoxHeight,
   popover,
   header,
   scrollArea,
@@ -177,7 +245,7 @@ export function positionAnchoredPopover({
   if (!anchor || !popover) {
     return { style: currentStyle, state };
   }
-  const anchorRect = anchor.getBoundingClientRect();
+  const anchorRect = fieldBoxRect(anchor, anchorBoxHeight);
   if (!anchorRect.width) {
     return { style: currentStyle, state };
   }
