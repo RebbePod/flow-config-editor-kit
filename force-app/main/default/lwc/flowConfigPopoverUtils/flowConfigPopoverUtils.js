@@ -180,6 +180,38 @@ function measuredHeight(element) {
   );
 }
 
+/**
+ * Returns the smallest height a picker's search input has had.
+ *
+ * A `lightning-input` host also contains its validation message, and the message
+ * lives in the input's shadow root, where a picker cannot measure it. The host only
+ * grows when that message appears, so its smallest height is the input box alone.
+ * In Flow Builder the popover opens on focus, before a required message can show,
+ * so the first measurement is already the box.
+ */
+export function rememberInputBoxHeight(rememberedHeight, input) {
+  const height = input?.getBoundingClientRect().height;
+  return height && !(rememberedHeight <= height) ? height : rememberedHeight;
+}
+
+/**
+ * Anchors to the input box rather than the whole host, so the popover covers
+ * "Complete this field." instead of dropping below it, which is where
+ * `lightning-base-combobox` attaches its own dropdown.
+ */
+function fieldBoxRect(anchor, boxHeight) {
+  const rect = anchor.getBoundingClientRect();
+  if (!boxHeight || boxHeight >= rect.height) {
+    return rect;
+  }
+  return {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    bottom: rect.top + boxHeight
+  };
+}
+
 function resetCorrections(state, anchorSignature, openAbove) {
   return {
     ...createPopoverState(),
@@ -199,6 +231,7 @@ function resetCorrections(state, anchorSignature, openAbove) {
  */
 export function positionAnchoredPopover({
   anchor,
+  anchorBoxHeight,
   popover,
   header,
   scrollArea,
@@ -212,7 +245,7 @@ export function positionAnchoredPopover({
   if (!anchor || !popover) {
     return { style: currentStyle, state };
   }
-  const anchorRect = anchor.getBoundingClientRect();
+  const anchorRect = fieldBoxRect(anchor, anchorBoxHeight);
   if (!anchorRect.width) {
     return { style: currentStyle, state };
   }

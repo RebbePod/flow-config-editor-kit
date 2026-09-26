@@ -2,7 +2,8 @@ import {
   createPopoverViewportController,
   createProgressiveRenderController,
   createPopoverState,
-  positionAnchoredPopover
+  positionAnchoredPopover,
+  rememberInputBoxHeight
 } from "c/flowConfigPopoverUtils";
 
 function elementWithRect(rect, scrollHeight = 0) {
@@ -36,6 +37,38 @@ describe("flowConfigPopoverUtils", () => {
     expect(positioned.state.openAbove).toBe(true);
     expect(positioned.style).toContain("height:416px");
     expect(positioned.style).toContain("top:180px");
+  });
+
+  it("anchors below the input box, not the host's validation message", () => {
+    const positioned = positionAnchoredPopover({
+      anchor: elementWithRect({ left: 100, top: 100, bottom: 152, width: 400 }),
+      anchorBoxHeight: 32,
+      popover: elementWithRect({ width: 0 }),
+      header: elementWithRect({ height: 36 }, 36),
+      scrollArea: elementWithRect({}, 500),
+      viewportWidth: 1000,
+      viewportHeight: 900
+    });
+
+    expect(positioned.state.openAbove).toBe(false);
+    expect(positioned.style).toContain("top:136px");
+  });
+
+  it("remembers the input's height from before its message appeared", () => {
+    const box = rememberInputBoxHeight(
+      undefined,
+      elementWithRect({ height: 32 })
+    );
+    const withMessage = rememberInputBoxHeight(
+      box,
+      elementWithRect({ height: 52 })
+    );
+    const hidden = rememberInputBoxHeight(
+      withMessage,
+      elementWithRect({ height: 0 })
+    );
+
+    expect([box, withMessage, hidden]).toEqual([32, 32, 32]);
   });
 
   it("adds an actions panel above the normal results height when space permits", () => {

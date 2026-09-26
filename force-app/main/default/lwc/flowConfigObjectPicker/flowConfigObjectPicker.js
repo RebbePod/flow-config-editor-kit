@@ -9,7 +9,8 @@ import {
   createProgressiveRenderController,
   createPopoverState,
   positionAnchoredPopover,
-  setPopoverHostActive
+  setPopoverHostActive,
+  rememberInputBoxHeight
 } from "c/flowConfigPopoverUtils";
 import { listObjects } from "c/flowConfigSchemaService";
 import {
@@ -50,6 +51,7 @@ export default class FlowConfigObjectPicker extends LightningElement {
   ignoreNextFocusOut = false;
   editTransitionTimer;
   popoverStyle = "";
+  inputBoxHeight;
   popoverState = createPopoverState();
   boundViewportHandler;
   resultsReady = true;
@@ -489,9 +491,13 @@ export default class FlowConfigObjectPicker extends LightningElement {
   updatePopoverPosition() {
     const anchor = this.template.querySelector(".selection, lightning-input");
     const popover = this.template.querySelector(".results");
+    if (!this.showSelectedState) {
+      this.inputBoxHeight = rememberInputBoxHeight(this.inputBoxHeight, anchor);
+    }
     setPopoverHostActive(this.template.host, true);
     const positioned = positionAnchoredPopover({
       anchor,
+      anchorBoxHeight: this.showSelectedState ? undefined : this.inputBoxHeight,
       popover,
       header: this.template.querySelector(".results__header"),
       scrollArea: this.template.querySelector(".results__scroll"),
